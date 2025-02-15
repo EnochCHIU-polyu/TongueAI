@@ -1,0 +1,4 @@
+azure-ai-inference
+toml
+streamlit
+openai
