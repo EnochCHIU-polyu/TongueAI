@@ -7,7 +7,9 @@ import streamlit as st
 
 
 # Load API key from secrets manager
+
 secrets = st.secrets
+
 
 
 
@@ -22,7 +24,7 @@ def answer(system_prompt, user_prompt, image=None, model_type="openrouter"):
             token = secrets['OPENROUTER']['OPENROUTER_API_KEY']
     elif model_type == "openai":
         print("Answer using OpenAI API")
-        endpoint = "https://api.openai.com/v1"
+        endpoint = "https://models.inference.ai.azure.com"
         if 'OPENAI' not in secrets or 'OPENAI_API_KEY' not in secrets['OPENAI']:
             # throw an error if the API key is not found
             raise ValueError("OpenAI API key not found")
