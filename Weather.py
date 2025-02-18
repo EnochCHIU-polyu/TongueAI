@@ -55,6 +55,4 @@ def show_weather():
     else:
         st.write("Failed to retrieve weather information.")
 
-# Call the function to show weather and advice
-show_weather()
 

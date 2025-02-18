@@ -1,40 +1,28 @@
 import os
-from azure.ai.inference import ChatCompletionsClient
-from azure.ai.inference.models import (
-    SystemMessage,
-    UserMessage,
-    TextContentItem,
-    ImageContentItem,
-    ImageUrl,
-    ImageDetailLevel,
-)
-from azure.core.credentials import AzureKeyCredential
+import toml
 
-token = os.environ["GITHUB_TOKEN"]
-endpoint = "https://models.inference.ai.azure.com"
-model_name = "gpt-4o-mini"
+import streamlit as st
 
-client = ChatCompletionsClient(
-    endpoint=endpoint,
-    credential=AzureKeyCredential(token),
-)
 
-response = client.complete(
-    messages=[
-        SystemMessage("You are a helpful assistant that describes images in details."),
-        UserMessage(
-            content=[
-                TextContentItem(text="What's in this image?"),
-                ImageContentItem(
-                    image_url=ImageUrl.load(
-                        image_file="T001.jpg",
-                        image_format="jpg",
-                        detail=ImageDetailLevel.LOW)
-                ),
-            ],
-        ),
-    ],
-    model=model_name,
-)
+# Load API key from secrets manager
+secrets = st.secrets
 
-print(response.choices[0].message.content)
+token = secrets['OPENAI']['OPENAI_API_KEY']
+
+print(token)
+
+import requests
+
+def check_openai_api_key(token):
+    url = "https://models.inference.ai.azure.com"
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        print("OpenAI API key is valid.")
+    else:
+        print(f"OpenAI API key is invalid. Status code: {response.status_code}, Response: {response.text}")
+
+# Replace 'your_openai_api_key' with your actual OpenAI API key
+check_openai_api_key("token")

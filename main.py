@@ -21,9 +21,16 @@ client = ChatCompletionsClient(
     credential=AzureKeyCredential(token),
 )
 
-# Initialize session state for page
+# Initialize session state for page with a welcom page not tonge detect
 if 'page' not in st.session_state:
-    st.session_state.page = "Tongue Detect"
+    st.session_state.page = "main"
+# setup the main page and clear page first
+def show_main():
+    st.title("Welcome to the AI Assistant")
+    st.write("This is a demo of an AI assistant that can help you with a variety of tasks.")
+    st.write("Use the sidebar to navigate between different sections.")
+    st.write("You can ask questions, get recommendations, and more!")
+
 
 # Sidebar for navigation
 st.sidebar.title("Navigation")
@@ -39,7 +46,9 @@ if st.sidebar.button("Go to Recommendation"):
 # Determine the current page
 page = st.session_state.page
 
-if page == "Personal Info":
+if page == "main":
+    show_main()
+elif page == "Personal Info":
     show_personal_info()
 elif page == "Tongue Detect":
     show_tongue_detect(client, model_name)
