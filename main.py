@@ -9,13 +9,8 @@ from recommendation import show_recommendation
 import streamlit as st
 
 
-# Load API key from credentials.txt or secrets manager
-file_path = 'credentials.txt'
-if os.path.exists(file_path):
-    with open(file_path, 'r') as f:
-        secrets = toml.load(f)
-else:
-    secrets = st.secrets
+# Load API key from secrets manager
+secrets = st.secrets
 
 token = secrets['OPENAI']['OPENAI_API_KEY']
 endpoint = "https://models.inference.ai.azure.com"
