@@ -6,13 +6,9 @@ from azure.core.credentials import AzureKeyCredential
 import streamlit as st
 
 
-# Load API key from credentials.txt or secrets manager
-file_path = 'credentials.txt'
-if os.path.exists(file_path):
-    with open(file_path, 'r') as f:
-        secrets = toml.load(f)
-else:
-    secrets = st.secrets
+# Load API key from secrets manager
+secrets = st.secrets
+
 
 
 def answer(system_prompt, user_prompt, image=None, model_type="openrouter"):
