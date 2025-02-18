@@ -10,7 +10,7 @@ import streamlit as st
 
 
 # Load API key from credentials.txt or secrets manager
-file_path = 'credentials'
+file_path = 'credentials.txt'
 if os.path.exists(file_path):
     with open(file_path, 'r') as f:
         secrets = toml.load(f)
