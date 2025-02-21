@@ -10,9 +10,6 @@ import streamlit as st
 
 secrets = st.secrets
 
-
-
-
 def answer(system_prompt, user_prompt, image=None, model_type="openrouter"):
     if model_type == "openrouter":
         print("Answer using Openrouter API")
