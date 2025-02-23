@@ -6,6 +6,7 @@ from personal_info import show_personal_info
 from tongue_detect import show_tongue_detect
 from Weather import show_weather
 from recommendation import show_recommendation
+from herb_check import show_herb
 import streamlit as st
 
 # Load API key from secrets manager
@@ -68,6 +69,8 @@ def show_sidebar():
         st.session_state.page = "Weather Info"
     if st.sidebar.button("Go to Recommendation" if st.session_state.language == "ENG" else "推薦"):
         st.session_state.page = "Recommendation"
+    if st.sidebar.button("Go to Herb Check" if st.session_state.language == "ENG" else "藥材查詢"):
+        st.session_state.page = "Herb Check"
 
 show_sidebar()
 
@@ -85,3 +88,5 @@ elif page == "Weather Info":
     show_weather()
 elif page == "Recommendation":
     show_recommendation()
+elif page == "Herb Check":
+    show_herb(client, model_name)

@@ -21,8 +21,8 @@ if 'uploaded_file' not in st.session_state:
 if 'uploaded_State' not in st.session_state:
     st.session_state.uploaded_State = False
 
-def show_tongue_detect(client, model_name):
-    st.title("Tongue Detect" if st.session_state.language == "ENG" else "舌診")
+def show_herb(client, model_name):
+    st.title("Herb Check" if st.session_state.language == "ENG" else "藥材查詢")
     
     # Create a submit button for upload image by camera or file
     st.markdown("### Upload an image" if st.session_state.language == "ENG" else "### 上傳圖片")
@@ -59,17 +59,27 @@ def show_tongue_detect(client, model_name):
     if st.session_state.uploaded_State:
         if uploaded_file is not None:
             st.session_state['uploaded_file'] = uploaded_file
+        
+        # Enhance the prompt for better herb searching in traditional Chinese medicine
         if st.session_state.language == "ENG":
-            user_prompt = "Please help me make a tongue diagnosis."
-            system_prompt = "Answer the questions in Engish, refer to the image for more background information, and act like a TCM expert. Provide 4 types of information: 1. Tongue body color, 2. Tongue quality, 3. Tongue coating, 4. Tongue shape, and give a score of 1-100 based on these information. Provide at least 3 types of Chinese medicine prescriptions based on these information"
+            user_prompt = "Analyze the uploaded image for provide detailed information about these herbs, including their names, properties, uses, and any precautions."
+
+            system_prompt = (
+            "You are an expert in traditional Chinese medicine. "
+            "Provide detailed information about these herbs, including their names, properties, uses, and any precautions."
+            )
         else:
-            user_prompt = "請幫我做一個舌診的中醫診斷。"
-            system_prompt = "回答問題時請使用中文，參考圖片以獲得更多背景資料，並表現得像一位中醫專家。詳細請提供4種類型的信息根據圖片舌頭的資料：1. 舌體顏色, 2. 舌質, 3. 舌苔, 4. 舌形，最後給出一個1-100的分數。並根據這些信息給出診斷，至少提供3種中藥處方。"
+            user_prompt = "分析上傳的圖片，根據中醫提供這些藥材的詳細信息，包括它們的名稱、性質、用途和任何注意事項。"
+
+            system_prompt = (
+            "您是一位中醫專家。"
+            "提供這些藥材的詳細信息，包括它們的名稱、性質、用途和任何注意事項。"
+            )
 
         if 'uploaded_file' in st.session_state:
             uploaded_file = st.session_state['uploaded_file']
             # Save the uploaded image to a temporary file
-            temp_image_path = "temp_image.png"
+            temp_image_path = "herb_temp_image.png"
             with open(temp_image_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             
