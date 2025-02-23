@@ -75,7 +75,7 @@ def show_recommendation():
     else:
         st.write("Tongue Detect Result:", "No result provided")
 
-    st.write("### Weather Info")
+    st.write("### Weather Info") if st.session_state.language == "ENG" else st.write("### 天氣信息")
     if 'advice' in st.session_state:
         st.write("Advice:", st.session_state.advice)
     else:
