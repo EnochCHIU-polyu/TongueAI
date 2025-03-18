@@ -8,6 +8,7 @@ from Weather import show_weather
 from recommendation import show_recommendation
 from herb_check import show_herb
 import streamlit as st
+import base64
 
 # Load API key from secrets manager
 secrets = st.secrets
@@ -21,14 +22,170 @@ client = ChatCompletionsClient(
     credential=AzureKeyCredential(token),
 )
 
-# Initialize session state for page with a welcome page not tongue detect
+# Set page configuration
+st.set_page_config(
+    page_title="AI TCM Assistant",
+    page_icon="🌿",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS for better UI
+def local_css():
+    st.markdown("""
+    <style>
+        /* Main container styling */
+        .main {
+            background-color: #f8f9fa;
+            padding: 2rem;
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .main {
+                background-color: #1e1e1e;
+            }
+            .feature-card {
+                background-color: #2d2d2d !important;
+                border: 1px solid #3d3d3d !important;
+            }
+            .feature-card:hover {
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
+            }
+        }
+        
+        /* Feature card */
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid #eaeaea;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #5D5CDE;
+        }
+        
+        .feature-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .feature-description {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Language selector */
+        .language-btn {
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: bold;
+        }
+        
+        .language-btn.active {
+            background-color: #5D5CDE;
+            color: white;
+        }
+        
+        .language-btn:hover:not(.active) {
+            background-color: #eaeaea;
+        }
+        
+        /* Header and navbar */
+        .stApp header {
+            background-color: transparent !important;
+        }
+        
+        /* Custom sidebar */
+        .css-1d391kg, .css-1r6slb0 {
+            background-color: #f1f3f9;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .css-1d391kg, .css-1r6slb0 {
+                background-color: #252525;
+            }
+        }
+        
+        /* Logo and title */
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #5D5CDE;
+        }
+        
+        .app-logo {
+            max-width: 80px;
+            margin-bottom: 10px;
+        }
+        
+        /* Navigation button */
+        .nav-button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-button:hover {
+            background-color: rgba(93, 92, 222, 0.1);
+        }
+        
+        .nav-button.active {
+            background-color: #5D5CDE;
+            color: white;
+        }
+        
+        .nav-icon {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        /* Welcome section */
+        .welcome-heading {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, #5D5CDE, #8A89FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .welcome-subheading {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = "main"
-# Initialize session state for language
 if 'language' not in st.session_state:
     st.session_state.language = "ENG"
-if 'language' not in st.session_state:
-    st.session_state.language = 'ENG'
 if 'camera' not in st.session_state:
     st.session_state.camera = False
 if 'uploaded_file' not in st.session_state:
@@ -36,57 +193,237 @@ if 'uploaded_file' not in st.session_state:
 if 'uploaded_State' not in st.session_state:
     st.session_state.uploaded_State = False
 
+# Apply custom CSS
+local_css()
+
+# Function to get icon HTML
+def get_icon(icon_name):
+    return f'<span class="material-icons nav-icon">{icon_name}</span>'
+
+# Function to create a navigation button
+def nav_button(label, icon, page_name, lang):
+    button_label = label[lang]
+    active_class = "active" if st.session_state.page == page_name else ""
+    
+    if st.sidebar.button(
+        f"{icon} {button_label}", 
+        key=f"nav_{page_name}",
+        use_container_width=True,
+        type="primary" if st.session_state.page == page_name else "secondary"
+    ):
+        st.session_state.page = page_name
+        st.rerun()
+
 # Function to show the main page
 def show_main():
-    if st.session_state.language == "ENG":
-        st.title("Welcome to the AI Traditional Chinese Medicine Assistant")
-        st.write("This AI-powered assistant provides personalized health advice and Traditional Chinese Medicine (TCM) prescriptions based on your health condition.")
-        st.write("Use the sidebar to navigate through different features and explore TCM wisdom.")
-        st.write("Enter your health concerns, and the AI will offer recommendations based on TCM principles!")
+    lang = st.session_state.language
+    
+    # Header section
+    if lang == "ENG":
+        st.markdown('<div class="welcome-heading">AI Traditional Chinese Medicine Assistant</div>', unsafe_allow_html=True)
+        st.markdown('<div class="welcome-subheading">Discover personalized health insights through the wisdom of TCM</div>', unsafe_allow_html=True)
     else:
-        st.title("歡迎使用AI中醫助手")
-        st.write("這個AI助手根據您的健康狀況提供個性化的健康建議和中醫處方。")
-        st.write("使用側邊欄導航不同功能，探索中醫智慧。")
-        st.write("輸入您的健康問題，AI將根據中醫原則提供建議！")
-
-# Sidebar for navigation and language switcher with col 1/3
-def show_sidebar():
-    st.sidebar.title("Language/語言")
-    col1, col2, col3, col4 = st.sidebar.columns([1, 1, 1, 1])
+        st.markdown('<div class="welcome-heading">AI中醫助手</div>', unsafe_allow_html=True)
+        st.markdown('<div class="welcome-subheading">通過中醫智慧發現個性化健康見解</div>', unsafe_allow_html=True)
+    
+    # Feature cards
+    col1, col2 = st.columns(2)
+    
     with col1:
-        if st.button("中文"):
-            st.session_state.language = "中文"
+        with st.container():
+            st.markdown("""
+            <div class="feature-card" onclick="javascript:void(0)">
+                <div class="feature-icon">👤</div>
+                <div class="feature-title">{0}</div>
+                <div class="feature-description">{1}</div>
+            </div>
+            """.format(
+                "Personal Information" if lang == "ENG" else "個人信息",
+                "Manage your health profile and track your progress over time" if lang == "ENG" else "管理您的健康檔案並跟踪您的進步"
+            ), unsafe_allow_html=True)
+            
+            if st.button("Go to Personal Info" if lang == "ENG" else "前往個人信息", use_container_width=True):
+                st.session_state.page = "Personal Info"
+                st.rerun()
+        
+        with st.container():
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">☁️</div>
+                <div class="feature-title">{0}</div>
+                <div class="feature-description">{1}</div>
+            </div>
+            """.format(
+                "Weather Information" if lang == "ENG" else "天氣信息",
+                "Get weather updates and TCM advice based on current conditions" if lang == "ENG" else "獲取天氣更新和基於當前狀況的中醫建議"
+            ), unsafe_allow_html=True)
+            
+            if st.button("Go to Weather Info" if lang == "ENG" else "前往天氣信息", use_container_width=True):
+                st.session_state.page = "Weather Info"
+                st.rerun()
+    
     with col2:
-        if st.button("ENG"):
-            st.session_state.language = "ENG"
-
-    st.sidebar.title("Navigation" if st.session_state.language == "ENG" else "導航")
-    if st.sidebar.button("Go to Personal Info" if st.session_state.language == "ENG" else "個人信息"):
-        st.session_state.page = "Personal Info"
-    if st.sidebar.button("Go to Tongue Detect" if st.session_state.language == "ENG" else "舌診"):
-        st.session_state.page = "Tongue Detect"
-    if st.sidebar.button("Go to Weather Info" if st.session_state.language == "ENG" else "天氣信息"):
-        st.session_state.page = "Weather Info"
-    if st.sidebar.button("Go to Recommendation" if st.session_state.language == "ENG" else "推薦"):
+        with st.container():
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">👅</div>
+                <div class="feature-title">{0}</div>
+                <div class="feature-description">{1}</div>
+            </div>
+            """.format(
+                "Tongue Diagnosis" if lang == "ENG" else "舌診",
+                "Upload or capture a tongue image for AI-powered TCM diagnosis" if lang == "ENG" else "上傳或捕獲舌頭圖像進行AI驅動的中醫診斷"
+            ), unsafe_allow_html=True)
+            
+            if st.button("Go to Tongue Detect" if lang == "ENG" else "前往舌診", use_container_width=True):
+                st.session_state.page = "Tongue Detect"
+                st.rerun()
+        
+        with st.container():
+            st.markdown("""
+            <div class="feature-card">
+                <div class="feature-icon">🌿</div>
+                <div class="feature-title">{0}</div>
+                <div class="feature-description">{1}</div>
+            </div>
+            """.format(
+                "Herbal Medicine Database" if lang == "ENG" else "藥材查詢",
+                "Search and learn about traditional Chinese herbs and remedies" if lang == "ENG" else "搜索和了解中草藥和傳統療法"
+            ), unsafe_allow_html=True)
+            
+            if st.button("Go to Herb Check" if lang == "ENG" else "前往藥材查詢", use_container_width=True):
+                st.session_state.page = "Herb Check"
+                st.rerun()
+    
+    # Recommendation section
+    st.markdown("""
+    <div class="feature-card">
+        <div class="feature-icon">💊</div>
+        <div class="feature-title">{0}</div>
+        <div class="feature-description">{1}</div>
+    </div>
+    """.format(
+        "Personalized Recommendations" if lang == "ENG" else "個性化推薦",
+        "Get customized TCM advice and treatment recommendations based on your health data" if lang == "ENG" else "根據您的健康數據獲取定制的中醫建議和治療推薦"
+    ), unsafe_allow_html=True)
+    
+    if st.button("Go to Recommendation" if lang == "ENG" else "前往推薦", use_container_width=True):
         st.session_state.page = "Recommendation"
-    if st.sidebar.button("Go to Herb Check" if st.session_state.language == "ENG" else "藥材查詢"):
-        st.session_state.page = "Herb Check"
+        st.rerun()
+    
+    # Information section
+    with st.expander("About this Application" if lang == "ENG" else "關於這個應用程序"):
+        if lang == "ENG":
+            st.write("""
+            This AI-powered assistant provides personalized health advice and Traditional Chinese Medicine (TCM) 
+            prescriptions based on your health condition. It combines modern technology with ancient TCM wisdom 
+            to offer holistic health insights.
+            
+            Use the sidebar to navigate through different features:
+            - **Personal Info**: Manage your health profile
+            - **Tongue Detect**: Get TCM diagnosis from tongue images
+            - **Weather Info**: Weather updates with TCM context
+            - **Recommendation**: Receive personalized health recommendations
+            - **Herb Check**: Learn about TCM herbs and their properties
+            """)
+        else:
+            st.write("""
+            這個AI驅動的助手根據您的健康狀況提供個性化的健康建議和中醫處方。它結合了現代技術和古老的中醫智慧，
+            提供全面的健康見解。
+            
+            使用側邊欄導航不同功能：
+            - **個人信息**：管理您的健康檔案
+            - **舌診**：從舌頭圖像獲取中醫診斷
+            - **天氣信息**：帶有中醫背景的天氣更新
+            - **推薦**：獲取個性化健康推薦
+            - **藥材查詢**：了解中藥材及其特性
+            """)
 
+# Improved sidebar with better UI
+def show_sidebar():
+    # App title and logo
+    st.sidebar.markdown('<div class="app-title">🌿 TCM AI</div>', unsafe_allow_html=True)
+    
+    # Language selector
+    st.sidebar.markdown("### " + ("Language" if st.session_state.language == "ENG" else "語言"))
+    lang_col1, lang_col2 = st.sidebar.columns(2)
+    
+    with lang_col1:
+        eng_active = "primary" if st.session_state.language == "ENG" else "secondary"
+        if st.button("English", key="lang_eng", type=eng_active, use_container_width=True):
+            st.session_state.language = "ENG"
+            st.rerun()
+    
+    with lang_col2:
+        cn_active = "primary" if st.session_state.language == "中文" else "secondary"
+        if st.button("中文", key="lang_cn", type=cn_active, use_container_width=True):
+            st.session_state.language = "中文"
+            st.rerun()
+    
+    # Navigation
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### " + ("Navigation" if st.session_state.language == "ENG" else "導航"))
+    
+    # Define navigation items with localization
+    nav_items = {
+        "main": {
+            "ENG": "Home",
+            "中文": "首頁",
+            "icon": "🏠"
+        },
+        "Personal Info": {
+            "ENG": "Personal Information",
+            "中文": "個人信息",
+            "icon": "👤"
+        },
+        "Tongue Detect": {
+            "ENG": "Tongue Diagnosis",
+            "中文": "舌診",
+            "icon": "👅"
+        },
+        "Weather Info": {
+            "ENG": "Weather Information",
+            "中文": "天氣信息",
+            "icon": "☁️"
+        },
+        "Recommendation": {
+            "ENG": "Recommendations",
+            "中文": "推薦",
+            "icon": "💊"
+        },
+        "Herb Check": {
+            "ENG": "Herb Database",
+            "中文": "藥材查詢",
+            "icon": "🌿"
+        }
+    }
+    
+    # Create navigation buttons
+    for page_key, page_info in nav_items.items():
+        nav_button(page_info, page_info["icon"], page_key, st.session_state.language)
+    
+    # Footer
+    st.sidebar.markdown("---")
+    st.sidebar.caption("© 2024 AI TCM Assistant")
+    st.sidebar.caption("Created by Enoch CHIU")
+
+# Call sidebar function
 show_sidebar()
-
 
 # Determine the current page
 page = st.session_state.page
 
-if page == "main":
-    show_main()
-elif page == "Personal Info":
-    show_personal_info()
-elif page == "Tongue Detect":
-    show_tongue_detect(client, model_name)
-elif page == "Weather Info":
-    show_weather()
-elif page == "Recommendation":
-    show_recommendation()
-elif page == "Herb Check":
-    show_herb(client, model_name)
+# Main content area
+with st.container():
+    if page == "main":
+        show_main()
+    elif page == "Personal Info":
+        show_personal_info()
+    elif page == "Tongue Detect":
+        show_tongue_detect(client, model_name)
+    elif page == "Weather Info":
+        show_weather()
+    elif page == "Recommendation":
+        show_recommendation()
+    elif page == "Herb Check":
+        show_herb(client, model_name)
