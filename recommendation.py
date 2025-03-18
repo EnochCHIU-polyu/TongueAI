@@ -119,7 +119,6 @@ Provide a holistic, personalized health recommendation that considers all provid
 - Ensure your recommendations are comprehensive and specific, including all necessary details.
 - More visual recommendations will be easier for users to understand and accept.
 - Explain TCM concepts in simple language for non-professionals to understand.
-- Ensure the content is engaging.
 
 Your response should be comprehensive yet practical, with specific, actionable advice. For herbal prescriptions, include preparation methods, usage instructions, and expected benefits.
 Write in a professional but accessible tone, explaining TCM concepts in ways that are understandable to those unfamiliar with traditional medicine."""
@@ -164,7 +163,6 @@ Write in a professional but accessible tone, explaining TCM concepts in ways tha
 - 請確保您的建議全面且具體，並包括所有必要的信息。
 - 更可視化的建議將更容易被用戶理解和接受。
 - 請使用易於理解的語言解釋中醫概念，以便非專業人士也能理解。
-- 請確保內容有趣。
 
 """
 
