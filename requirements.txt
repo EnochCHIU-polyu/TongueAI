@@ -3,3 +3,4 @@ toml
 streamlit
 openai
 markdown
+matplotlib
