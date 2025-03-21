@@ -3,7 +3,7 @@ import requests
 import json
 import markdown
 import re
-from llm_openai import advice_llm_long
+from llm_openai import advice_llm
 import time
 import base64
 
@@ -171,7 +171,7 @@ Write in a professional but accessible tone, explaining TCM concepts in ways tha
 
         try:
             # Generate the recommendation
-            recommendation = advice_llm_long(system_prompt, user_prompt, model_type="openai")
+            recommendation = advice_llm(system_prompt, user_prompt, model_type="openai")
             
             # Save to session state
             st.session_state.recommendation = recommendation
