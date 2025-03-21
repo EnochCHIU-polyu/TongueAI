@@ -58,11 +58,16 @@ def llm_recommendation():
         st.session_state['recommendation_loading'] = False
     if 'recommendation_time' not in st.session_state:
         st.session_state['recommendation_time'] = None
+    if 'recommendation_language' not in st.session_state:
+        st.session_state['recommendation_language'] = None
     
+    lang = st.session_state.language
+    language_changed = st.session_state.recommendation_language != lang and st.session_state.recommendation is not None
+
     # Check if we need to generate a new recommendation
     force_refresh = 'force_recommendation_refresh' in st.session_state and st.session_state.force_recommendation_refresh
     
-    if (st.session_state.recommendation is None or force_refresh):
+    if (st.session_state.recommendation is None or force_refresh or language_changed):
         st.session_state.recommendation_loading = True
         
         # Prepare user data for the prompt
@@ -80,8 +85,6 @@ def llm_recommendation():
         additional_info = st.session_state.get('additional_info', '')
         
         # Create the prompt based on language
-        lang = st.session_state.language
-        
         if lang == "ENG":
             user_prompt = f"""Please provide a comprehensive TCM health recommendation based on the following information:
 
