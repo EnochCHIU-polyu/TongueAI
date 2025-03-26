@@ -3,7 +3,7 @@ import requests
 import json
 import markdown
 import re
-from llm_openai import advice_llm
+from llm_openai import advice_llm_long
 import time
 import base64
 
@@ -58,16 +58,20 @@ def llm_recommendation():
         st.session_state['recommendation_loading'] = False
     if 'recommendation_time' not in st.session_state:
         st.session_state['recommendation_time'] = None
-    if 'recommendation_language' not in st.session_state:
-        st.session_state['recommendation_language'] = None
-    
-    lang = st.session_state.language
-    language_changed = st.session_state.recommendation_language != lang and st.session_state.recommendation is not None
+    if 'recommendation_lang' not in st.session_state:
+        st.session_state['recommendation_lang'] = 'ENG'
+    if 'language' not in st.session_state:
+        st.session_state.language = "ENG"
 
     # Check if we need to generate a new recommendation
-    force_refresh = 'force_recommendation_refresh' in st.session_state and st.session_state.force_recommendation_refresh
-    
-    if (st.session_state.recommendation is None or force_refresh or language_changed):
+    # Check if we need to generate a new recommendation based on:
+    # 1. If user explicitly requested a refresh
+    # 2. If language has changed since last recommendation
+    force_refresh = ('force_recommendation_refresh' in st.session_state and st.session_state.force_recommendation_refresh) or \
+                    ('recommendation_lang' in st.session_state and st.session_state.recommendation_lang != st.session_state.language)
+      
+    # Set loading state if we need a new recommendation
+    if (st.session_state.recommendation is None or force_refresh):
         st.session_state.recommendation_loading = True
         
         # Prepare user data for the prompt
@@ -85,6 +89,8 @@ def llm_recommendation():
         additional_info = st.session_state.get('additional_info', '')
         
         # Create the prompt based on language
+        lang = st.session_state.language
+        
         if lang == "ENG":
             user_prompt = f"""Please provide a comprehensive TCM health recommendation based on the following information:
 
@@ -171,8 +177,8 @@ Write in a professional but accessible tone, explaining TCM concepts in ways tha
 
         try:
             # Generate the recommendation
-            recommendation = advice_llm(system_prompt, user_prompt, model_type="openai")
-            
+            recommendation = advice_llm_long(system_prompt, user_prompt, model_type="openai")
+            st.session_state.recommendation_lang = lang
             # Save to session state
             st.session_state.recommendation = recommendation
             st.session_state.recommendation_time = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -216,7 +222,7 @@ def show_recommendation():
     with col1:
         # Recommendation display section
         st.markdown(f"""
-            <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 🌿 {'Your Health Recommendations' if lang == 'ENG' else '您的健康建議'}
             </h3>
         """, unsafe_allow_html=True)
@@ -290,7 +296,7 @@ def show_recommendation():
         
         # Additional information input
         st.markdown(f"""
-            <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 ✏️ {'Additional Health Information' if lang == 'ENG' else '其他健康信息'}
             </h3>
         """, unsafe_allow_html=True)
@@ -471,44 +477,3 @@ def show_recommendation():
             else:
                 st.info("No seasonal information available" if lang == "ENG" else "沒有可用的季節信息")
     
-    # Add dark mode support via custom CSS
-    st.markdown("""
-    <style>
-        /* Dark mode overrides */
-        @media (prefers-color-scheme: dark) {
-            div[data-testid="stVerticalBlock"] > div:nth-child(1) {
-                background-color: #262730;
-            }
-            
-            div[style*="background-color: white"] {
-                background-color: #2d2d2d !important;
-                border-color: #444 !important;
-            }
-            
-            div[style*="background-color: #f8f9fb"] {
-                background-color: #3d3d3d !important;
-            }
-            
-            h3[style*="color: #333"], h4 {
-                color: #e0e0e0 !important;
-                border-bottom-color: #444 !important;
-            }
-            
-            div[style*="color: #666"], div[style*="color: #333"], div[style*="color: #888"] {
-                color: #e0e0e0 !important;
-            }
-            
-            div[style*="border-bottom: 1px solid #eee"] {
-                border-bottom-color: #444 !important;
-            }
-            
-            div[style*="border-top: 1px solid #eee"] {
-                border-top-color: #444 !important;
-            }
-            
-            div[style*="background-color: #f1f1f1"] {
-                background-color: #444 !important;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)

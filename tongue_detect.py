@@ -13,10 +13,18 @@ from PIL import Image
 import io
 import re
 import os
+join = os.path.join
 import time
 import base64
 
 def show_tongue_detect(client, model_name):
+    for f in os.listdir("data/combined_output"):
+        os.remove(join("data/combined_output", f))
+    for f in os.listdir("data/test_mask"):
+        os.remove(join("data/test_mask", f))
+    for f in os.listdir("data/real_ai_input"):
+        os.remove(join("data/real_ai_input", f))
+
     # Initialize all required session states if not already present
     if 'tongue_analysis_result' not in st.session_state:
         st.session_state.tongue_analysis_result = None
@@ -32,11 +40,17 @@ def show_tongue_detect(client, model_name):
         st.session_state.uploaded_file = None
     if 'uploaded_State' not in st.session_state:
         st.session_state.uploaded_State = False
-        
+    if 'page' not in st.session_state:
+        st.session_state.page = "Tongue Diagnosis"
+    camera_image = None
+    uploaded_file = None
     lang = st.session_state.language
     
-    # Page header
-    st.markdown(f"<h1 style='color: #5D5CDE;'>{'Tongue Diagnosis' if lang == 'ENG' else '舌診分析'}</h1>", unsafe_allow_html=True)
+    # Navigation - Add this at the top of the page
+    nav_col1, nav_col2 = st.columns([6, 4])
+    with nav_col1:
+        st.markdown(f"<h1 style='color: #5D5CDE;'>{'Tongue Diagnosis' if lang == 'ENG' else '舌診分析'}</h1>", unsafe_allow_html=True)
+
     
     # Main layout using columns
     col1, col2 = st.columns([3, 2])
@@ -53,17 +67,17 @@ def show_tongue_detect(client, model_name):
                       "上傳或拍攝一張清晰的舌頭圖片，以獲得全面的中醫分析。")
         
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 15px;">{intro_title}</h3>
-            <p style="color: #666; margin-bottom: 15px;">{intro_text1}</p>
-            <p style="color: #666;">{intro_text2}</p>
+        <div style="border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+            <h3 style=" margin-bottom: 15px;">{intro_title}</h3>
+            <p style=" margin-bottom: 15px;">{intro_text1}</p>
+            <p style="">{intro_text2}</p>
         </div>
         """, unsafe_allow_html=True)
 
         # Image Upload Section
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 15px;">{'📷 Upload Tongue Image' if lang == 'ENG' else '📷 上傳舌頭圖片'}</h3>
+        <div style=" border-radius: 10px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+            <h3 style=" margin-bottom: 15px;">{'📷 Upload Tongue Image' if lang == 'ENG' else '📷 上傳舌頭圖片'}</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -161,8 +175,8 @@ def show_tongue_detect(client, model_name):
     with col2:
         # Result container
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 15px;">{'📊 Diagnosis Results' if lang == 'ENG' else '📊 診斷結果'}</h3>
+        <div style=" border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+            <h3 style=" margin-bottom: 15px;">{'📊 Diagnosis Results' if lang == 'ENG' else '📊 診斷結果'}</h3>
         </div>
         """, unsafe_allow_html=True)
         
@@ -175,7 +189,7 @@ def show_tongue_detect(client, model_name):
                         uploaded_file = st.session_state.uploaded_file
                         
                         # Save the uploaded image to a temporary file
-                        temp_image_path = "temp_image.png"
+                        temp_image_path = "temp_image.jpg"
                         with open(temp_image_path, "wb") as f:
                             f.write(uploaded_file.getbuffer())
                         
@@ -365,33 +379,24 @@ def show_tongue_detect(client, model_name):
         
         舌診始終與其他診斷方法一起使用，如脈診、病史和體格檢查，以進行全面評估。
         """)
-    
-    # Add dark mode support via custom CSS
-    st.markdown("""
-    <style>
-        /* Dark mode overrides */
-        @media (prefers-color-scheme: dark) {
-            div[data-testid="stVerticalBlock"] > div:nth-child(1) {
-                background-color: #262730;
-            }
-            
-            div[style*="background-color: white"] {
-                background-color: #2d2d2d !important;
-                border-color: #444 !important;
-            }
-            
-            h3[style*="color: #333"], h4 {
-                color: #e0e0e0 !important;
-                border-bottom-color: #444 !important;
-            }
-            
-            p, div {
-                color: #e0e0e0 !important;
-            }
-            
-            div[style*="background-color: #f1f1f1"] {
-                background-color: #444 !important;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)
+
+
+# The main script would typically have a structure like this:
+# if __name__ == "__main__":
+#     # Connect to Azure AI client
+#     client = ChatCompletionsClient(
+#         endpoint="YOUR_ENDPOINT",
+#         credential=AzureKeyCredential("YOUR_API_KEY")
+#     )
+#     model_name = "YOUR_MODEL_NAME"
+#
+#     # Check which page to display
+#     if 'page' not in st.session_state:
+#         st.session_state.page = "Tongue Diagnosis"
+#     
+#     page = st.session_state.page
+#     
+#     if page == "Tongue Diagnosis":
+#         show_tongue_detect(client, model_name)
+#     elif page == "Herb Check":
+#         show_herb(client, model_name)

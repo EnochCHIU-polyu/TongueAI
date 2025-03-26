@@ -112,8 +112,8 @@ def show_weather():
     with date_col:
         # Gregorian calendar card
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <div style=" border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 📅 {'Gregorian Calendar' if lang == 'ENG' else '公曆'}
             </h3>
             <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-bottom: 15px;">
@@ -121,7 +121,7 @@ def show_weather():
                 <div style="font-size: 18px; color: #666;">{date.strftime('%B %Y') if lang == 'ENG' else f"{date.year}年{date.month}月"}</div>
                 <div style="font-size: 16px; color: #888; margin-top: 5px;">{day_of_week if lang == 'ENG' else day_of_week_chinese}</div>
             </div>
-            <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px;">
+            <div style=" padding: 10px; border-radius: 8px; margin-top: 15px;">
                 <div style="font-size: 14px; color: #666; text-align: center;">
                     {'Current Season' if lang == 'ENG' else '當前季節'}: 
                     <span style="font-weight: bold; color: #5D5CDE;">{season_eng if lang == 'ENG' else season_chi}</span>
@@ -220,8 +220,8 @@ def show_weather():
                 
                 # Lunar calendar card
                 st.markdown(f"""
-                <div style="background-color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-                    <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <div style=" border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                    <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                         🏮 {'Lunar Calendar' if lang == 'ENG' else '農曆'}
                     </h3>
                     <div style="display: flex; justify-content: center; align-items: center; flex-direction: column; margin-bottom: 15px;">
@@ -229,7 +229,7 @@ def show_weather():
                         <div style="font-size: 18px; color: #666;">{lunar_info['lunar_date'] if lang == 'ENG' else lunar_info['lunar_date']}</div>
                         <div style="font-size: 16px; color: #888; margin-top: 5px;">{lunar_info['lunar_year']} - {'Year of the ' + lunar_info['zodiac_eng'] if lang == 'ENG' else lunar_info['zodiac_chi'] + '年'}</div>
                     </div>
-                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 15px; text-align: center;">
+                    <div style=" padding: 10px; border-radius: 8px; margin-top: 15px; text-align: center;">
                         <div style="font-size: 24px; margin-bottom: 5px;">
                             {get_zodiac_emoji(lunar_info['zodiac_eng'])}
                         </div>
@@ -243,8 +243,8 @@ def show_weather():
             else:
                 # Display placeholder if lunar info not yet loaded
                 st.markdown(f"""
-                <div style="background-color: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea; text-align: center;">
-                    <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <div style=" border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea; text-align: center;">
+                    <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                         🏮 {'Lunar Calendar' if lang == 'ENG' else '農曆'}
                     </h3>
                     <div style="color: #666; padding: 40px 0;">
@@ -255,7 +255,7 @@ def show_weather():
         
         # TCM Advice section
         st.markdown(f"""
-            <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 🌿 {'Daily TCM Guidance' if lang == 'ENG' else '每日中醫指導'}
             </h3>
         """, unsafe_allow_html=True)
@@ -306,23 +306,23 @@ def show_weather():
                 
                 with mindful_col:
                     st.markdown(f"""
-                    <div style="background-color: #f8f9fb; border-radius: 8px; padding: 15px; height: 100%;">
+                    <div style=" border-radius: 8px; padding: 15px; height: 100%;">
                         <h4 style="color: #5D5CDE; margin-bottom: 10px; font-size: 18px;">
                             {'Today\'s Mindfulness' if lang == 'ENG' else '今日注意事項'}
                         </h4>
-                        <div style="color: #333; font-size: 14px;">
+                        <div style=" font-size: 14px;">
                             {mindful.replace('\n', '<br>')}
                         </div>
-                    </div>
+                    </div><br>
                     """, unsafe_allow_html=True)
                 
                 with prescription_col:
                     st.markdown(f"""
-                    <div style="background-color: #f8f9fb; border-radius: 8px; padding: 15px; height: 100%;">
+                    <div style=" border-radius: 8px; padding: 15px; height: 100%;">
                         <h4 style="color: #E74C3C; margin-bottom: 10px; font-size: 18px;">
                             {'Recommended Remedies' if lang == 'ENG' else '推薦的療法'}
                         </h4>
-                        <div style="color: #333; font-size: 14px;">
+                        <div style=" font-size: 14px;">
                             {prescription.replace('\n', '<br>')}
                         </div>
                     </div>
@@ -330,8 +330,8 @@ def show_weather():
             else:
                 # Just display the full advice
                 st.markdown(f"""
-                <div style="background-color: #f8f9fb; border-radius: 8px; padding: 15px;">
-                    <div style="color: #333; font-size: 14px; white-space: pre-line;">
+                <div style="; border-radius: 8px; padding: 15px;">
+                    <div style=" font-size: 14px; white-space: pre-line;">
                         {advice}
                     </div>
                 </div>
@@ -361,8 +361,8 @@ def show_weather():
         else:
             # Display placeholder if advice not yet generated
             st.markdown("""
-            <div style="background-color: #f8f9fb; border-radius: 8px; padding: 15px; text-align: center;">
-                <div style="color: #666; padding: 40px 0;">
+            <div style=" border-radius: 8px; padding: 15px; text-align: center;">
+                <div style=" padding: 40px 0;">
                     Generating personalized TCM advice...
                 </div>
             </div>
@@ -435,11 +435,10 @@ def show_weather():
         
         # Seasonal health tips
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 🍃 {'Seasonal Health Tips' if lang == 'ENG' else '季節健康提示'}
             </h3>
-            <div style="color: #666; margin-bottom: 20px; font-size: 16px;">
+            <div style=" margin-bottom: 20px; font-size: 16px;">
                 {'According to TCM, each season requires different approaches to maintain optimal health and balance.' if lang == 'ENG' else '根據中醫理論，每個季節都需要不同的方法來保持最佳健康和平衡。'}
             </div>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
@@ -448,9 +447,9 @@ def show_weather():
         for i, tip in enumerate(tips):
             icon = ["🌱", "🍵", "🥗", "🧘‍♀️"][i % 4]
             st.markdown(f"""
-            <div style="background-color: #f8f9fb; border-radius: 8px; padding: 15px;">
+            <div style=" border-radius: 8px; padding: 15px;">
                 <div style="font-size: 24px; margin-bottom: 10px;">{icon}</div>
-                <div style="color: #333; font-size: 14px;">{tip}</div>
+                <div style=" font-size: 14px;">{tip}</div>
             </div>
             """, unsafe_allow_html=True)
         
@@ -459,32 +458,3 @@ def show_weather():
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
     
-    # Add dark mode support via custom CSS
-    st.markdown("""
-    <style>
-        /* Dark mode overrides */
-        @media (prefers-color-scheme: dark) {
-            div[data-testid="stVerticalBlock"] > div:nth-child(1) {
-                background-color: #262730;
-            }
-            
-            div[style*="background-color: white"] {
-                background-color: #2d2d2d !important;
-                border-color: #444 !important;
-            }
-            
-            div[style*="background-color: #f8f9fb"] {
-                background-color: #3d3d3d !important;
-            }
-            
-            h3[style*="color: #333"], h4[style*="color: #5D5CDE"], h4[style*="color: #E74C3C"] {
-                color: #e0e0e0 !important;
-                border-bottom-color: #444 !important;
-            }
-            
-            div[style*="color: #666"], div[style*="color: #333"], div[style*="color: #888"] {
-                color: #e0e0e0 !important;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)

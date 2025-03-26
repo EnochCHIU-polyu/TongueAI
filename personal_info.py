@@ -97,7 +97,7 @@ def show_personal_info():
     with col1:
         # Profile information card
         st.markdown("""
-            <h3 style="color: #333; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 🧑‍⚕️ {0}
             </h3>
         """.format(
@@ -188,8 +188,8 @@ def show_personal_info():
         bmi_color = get_bmi_color(bmi)
         
         st.markdown(f"""
-        <div style="background-color: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 20px; border: 1px solid #eaeaea;">
-            <h3 style="color: #333; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        <div style=" border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); margin-bottom: 20px; border: 1px solid #eaeaea;">
+            <h3 style=" margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 📊 {"BMI Calculator" if lang == "ENG" else "BMI 計算器"}
             </h3>
             <div style="text-align: center; margin-bottom: 15px;">
@@ -297,36 +297,3 @@ def show_personal_info():
         st.session_state.exercise_frequency = "0"
         st.session_state.health_history = ""
         st.rerun()
-
-    # Add dark mode support via custom CSS
-    st.markdown("""
-    <style>
-        /* Dark mode overrides */
-        @media (prefers-color-scheme: dark) {
-            div[data-testid="stVerticalBlock"] > div:nth-child(1) {
-                background-color: #262730;
-            }
-            
-            div[style*="background-color: white"] {
-                background-color: #2d2d2d !important;
-                border-color: #444 !important;
-            }
-            
-            h3[style*="color: #333"] {
-                color: #e0e0e0 !important;
-                border-bottom-color: #444 !important;
-            }
-            
-            .stTextInput > div > div > input,
-            .stNumberInput > div > div > input,
-            .stSelectbox, .stTextArea textarea {
-                background-color: #3d3d3d !important;
-                color: #e0e0e0 !important;
-            }
-            
-            p, div {
-                color: #e0e0e0 !important;
-            }
-        }
-    </style>
-    """, unsafe_allow_html=True)

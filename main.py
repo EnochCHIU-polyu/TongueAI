@@ -40,7 +40,7 @@ def local_css():
             padding: 2rem;
         }
         
-        /* Dark mode support */
+        /* Dark mode support 
         @media (prefers-color-scheme: dark) {
             .main {
                 background-color: #1e1e1e;
@@ -52,22 +52,16 @@ def local_css():
             .feature-card:hover {
                 box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
             }
-        }
+        }*/
         
         /* Feature card */
         .feature-card {
-            background-color: white;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             border: 1px solid #eaeaea;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
         }
         
         .feature-icon {
@@ -80,11 +74,9 @@ def local_css():
             font-weight: bold;
             font-size: 1.2rem;
             margin-bottom: 10px;
-            color: #333;
         }
         
         .feature-description {
-            color: #666;
             font-size: 0.9rem;
         }
         
@@ -117,11 +109,11 @@ def local_css():
             background-color: #f1f3f9;
         }
         
-        @media (prefers-color-scheme: dark) {
+        /*@media (prefers-color-scheme: dark) {
             .css-1d391kg, .css-1r6slb0 {
                 background-color: #252525;
             }
-        }
+        }*/
         
         /* Logo and title */
         .app-title {
@@ -236,6 +228,7 @@ def show_main():
                 <div class="feature-icon">👤</div>
                 <div class="feature-title">{0}</div>
                 <div class="feature-description">{1}</div>
+                        
             </div>
             """.format(
                 "Personal Information" if lang == "ENG" else "個人信息",
