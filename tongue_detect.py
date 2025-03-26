@@ -18,13 +18,6 @@ import time
 import base64
 
 def show_tongue_detect(client, model_name):
-    for f in os.listdir("data/combined_output"):
-        os.remove(join("data/combined_output", f))
-    for f in os.listdir("data/test_mask"):
-        os.remove(join("data/test_mask", f))
-    for f in os.listdir("data/real_ai_input"):
-        os.remove(join("data/real_ai_input", f))
-
     # Initialize all required session states if not already present
     if 'tongue_analysis_result' not in st.session_state:
         st.session_state.tongue_analysis_result = None
