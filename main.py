@@ -8,7 +8,6 @@ from tongue_detect import show_tongue_detect
 from Weather import show_weather
 from recommendation import show_recommendation
 from herb_check import show_herb
-from tongue_detect_detail import show_DetailTongueDiagnosis
 from chat import show_chat
 import streamlit as st
 import base64
@@ -460,8 +459,6 @@ with st.container():
         show_recommendation()
     elif page == "Herb Check":
         show_herb(client, model_name)
-    elif page == "Detail Tongue Diagnosis":
-        show_DetailTongueDiagnosis(client, model_name)
     elif page == "Chat":
         show_chat(client, model_name)
     elif page == "quick_start":
