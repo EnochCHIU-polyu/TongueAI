@@ -1,3 +1,4 @@
+# In main.py
 import os
 import toml
 from azure.ai.inference import ChatCompletionsClient
@@ -7,8 +8,11 @@ from tongue_detect import show_tongue_detect
 from Weather import show_weather
 from recommendation import show_recommendation
 from herb_check import show_herb
+from tongue_detect_detail import show_DetailTongueDiagnosis
+from chat import show_chat
 import streamlit as st
 import base64
+from quick_start import show_quick_start  # Import the quick start module
 
 # Load API key from secrets manager
 secrets = st.secrets
@@ -30,6 +34,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Initialize additional session state variables for quick start
+if 'quick_start_step' not in st.session_state:
+    st.session_state.quick_start_step = 1
+if 'personal_data_complete' not in st.session_state:
+    st.session_state.personal_data_complete = False
+if 'tongue_data_complete' not in st.session_state:
+    st.session_state.tongue_data_complete = False
+if 'weather_data_complete' not in st.session_state:
+    st.session_state.weather_data_complete = False
+if 'final_recommendation' not in st.session_state:
+    st.session_state.final_recommendation = None
+
 # Custom CSS for better UI
 def local_css():
     st.markdown("""
@@ -39,20 +55,6 @@ def local_css():
             background-color: #f8f9fa;
             padding: 2rem;
         }
-        
-        /* Dark mode support 
-        @media (prefers-color-scheme: dark) {
-            .main {
-                background-color: #1e1e1e;
-            }
-            .feature-card {
-                background-color: #2d2d2d !important;
-                border: 1px solid #3d3d3d !important;
-            }
-            .feature-card:hover {
-                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
-            }
-        }*/
         
         /* Feature card */
         .feature-card {
@@ -109,12 +111,6 @@ def local_css():
             background-color: #f1f3f9;
         }
         
-        /*@media (prefers-color-scheme: dark) {
-            .css-1d391kg, .css-1r6slb0 {
-                background-color: #252525;
-            }
-        }*/
-        
         /* Logo and title */
         .app-title {
             font-size: 1.8rem;
@@ -170,6 +166,23 @@ def local_css():
             color: #666;
             margin-bottom: 2rem;
         }
+
+        /* Quick start button */
+        .quick-start-button {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f0f7ff;
+            border: 2px solid #5D5CDE;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-start-button:hover {
+            background-color: #e0eeff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(93, 92, 222, 0.1);
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -217,6 +230,23 @@ def show_main():
     else:
         st.markdown('<div class="welcome-heading">AI中醫助手</div>', unsafe_allow_html=True)
         st.markdown('<div class="welcome-subheading">通過中醫智慧發現個性化健康見解</div>', unsafe_allow_html=True)
+    
+    # Quick Start Button - prominent at the top
+    st.markdown(f"""
+    <div class="quick-start-button">
+        <div style="font-size: 24px; margin-bottom: 10px;">{'👋 New to TCM AI?' if lang == 'ENG' else '👋 初次使用中醫AI？'}</div>
+        <div style="font-size: 16px; margin-bottom: 15px;">{'Get started with our guided setup to receive personalized TCM recommendations in just a few steps.' if lang == 'ENG' else '通過我們的引導式設置，只需幾個步驟即可獲得個性化的中醫建議。'}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button(
+        "🚀 " + ("Quick Start Guide" if lang == "ENG" else "快速入門指南"), 
+        type="primary",
+        use_container_width=True
+    ):
+        st.session_state.page = "quick_start"
+        st.session_state.quick_start_step = 1
+        st.rerun()
     
     # Feature cards
     col1, col2 = st.columns(2)
@@ -364,6 +394,11 @@ def show_sidebar():
             "中文": "首頁",
             "icon": "🏠"
         },
+        "quick_start": {
+            "ENG": "Quick Start",
+            "中文": "快速入門",
+            "icon": "🚀"
+        },
         "Personal Info": {
             "ENG": "Personal Information",
             "中文": "個人信息",
@@ -388,6 +423,11 @@ def show_sidebar():
             "ENG": "Herb Database",
             "中文": "藥材查詢",
             "icon": "🌿"
+        },
+        "Chat": {
+            "ENG": "AI Chat",
+            "中文": "AI 对话",
+            "icon": "💬"
         }
     }
     
@@ -420,3 +460,9 @@ with st.container():
         show_recommendation()
     elif page == "Herb Check":
         show_herb(client, model_name)
+    elif page == "Detail Tongue Diagnosis":
+        show_DetailTongueDiagnosis(client, model_name)
+    elif page == "Chat":
+        show_chat(client, model_name)
+    elif page == "quick_start":
+        show_quick_start(client, model_name)  # Call the imported quick start function
