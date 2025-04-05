@@ -8,7 +8,6 @@ from tongue_detect import show_tongue_detect
 from Weather import show_weather
 from recommendation import show_recommendation
 from herb_check import show_herb
-from chat import show_chat
 import streamlit as st
 import base64
 from quick_start import show_quick_start  # Import the quick start module
@@ -422,11 +421,6 @@ def show_sidebar():
             "ENG": "Herb Database",
             "中文": "藥材查詢",
             "icon": "🌿"
-        },
-        "Chat": {
-            "ENG": "AI Chat",
-            "中文": "AI 对话",
-            "icon": "💬"
         }
     }
     
@@ -459,7 +453,5 @@ with st.container():
         show_recommendation()
     elif page == "Herb Check":
         show_herb(client, model_name)
-    elif page == "Chat":
-        show_chat(client, model_name)
     elif page == "quick_start":
         show_quick_start(client, model_name)  # Call the imported quick start function
