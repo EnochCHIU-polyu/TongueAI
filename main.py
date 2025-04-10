@@ -195,6 +195,8 @@ if 'uploaded_file' not in st.session_state:
     st.session_state.uploaded_file = None
 if 'uploaded_State' not in st.session_state:
     st.session_state.uploaded_State = False
+if 'last_page' not in st.session_state:
+    st.session_state.last_page = "main"
 
 # Apply custom CSS
 local_css()
@@ -214,6 +216,7 @@ def nav_button(label, icon, page_name, lang):
         use_container_width=True,
         type="primary" if st.session_state.page == page_name else "secondary"
     ):
+        st.session_state.last_page = st.session_state.page
         st.session_state.page = page_name
         if st.session_state.quick_start_step != 5:
             st.session_state.personal_info_step = 1
@@ -245,6 +248,7 @@ def show_main():
         type="primary",
         use_container_width=True
     ):
+        st.session_state.last_page = st.session_state.page
         st.session_state.page = "quick_start"
         if st.session_state.quick_start_step != 5:
             st.session_state.personal_info_step = 1
@@ -269,6 +273,7 @@ def show_main():
             ), unsafe_allow_html=True)
             
             if st.button("Go to Personal Info" if lang == "ENG" else "前往個人信息", use_container_width=True):
+                st.session_state.last_page = st.session_state.page
                 st.session_state.page = "Personal Info"
                 st.rerun()
         
@@ -285,6 +290,7 @@ def show_main():
             ), unsafe_allow_html=True)
             
             if st.button("Go to Weather Info" if lang == "ENG" else "前往天氣信息", use_container_width=True):
+                st.session_state.last_page = st.session_state.page
                 st.session_state.page = "Weather Info"
                 st.rerun()
     
@@ -302,6 +308,7 @@ def show_main():
             ), unsafe_allow_html=True)
             
             if st.button("Go to Tongue Detect" if lang == "ENG" else "前往舌診", use_container_width=True):
+                st.session_state.last_page = st.session_state.page
                 st.session_state.page = "Tongue Detect"
                 st.rerun()
         
@@ -318,6 +325,7 @@ def show_main():
             ), unsafe_allow_html=True)
             
             if st.button("Go to Herb Check" if lang == "ENG" else "前往藥材查詢", use_container_width=True):
+                st.session_state.last_page = st.session_state.page
                 st.session_state.page = "Herb Check"
                 st.rerun()
     
@@ -334,6 +342,7 @@ def show_main():
     ), unsafe_allow_html=True)
     
     if st.button("Go to Recommendation" if lang == "ENG" else "前往推薦", use_container_width=True):
+        st.session_state.last_page = st.session_state.page
         st.session_state.page = "Recommendation"
         st.rerun()
     
@@ -441,14 +450,32 @@ def show_sidebar():
 # Call sidebar function
 show_sidebar()
 
+# Scroll to top JavaScript - place at the beginning of each page load
+if st.session_state.last_page != st.session_state.page:
+    # This JavaScript will attempt to scroll to the top when the page changes
+    st.markdown("""
+    <script>
+        // Attempt to scroll to top
+        window.scrollTo(0, 0);
+        
+        // Alternative approach using requestAnimationFrame for more reliable scrolling
+        window.addEventListener('load', function() {
+            window.requestAnimationFrame(function() {
+                window.scrollTo(0, 0);
+            });
+        });
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Reset the last_page to current page after scrolling attempt
+    st.session_state.last_page = st.session_state.page
+
 # Determine the current page
 page = st.session_state.page
 
 # Main content area
 with st.container():
     if page == "main":
-        #scroll to the top by streamlit
-        st.markdown('<script>window.scrollTo(0, 0);</script>', unsafe_allow_html=True)
         show_main()
     elif page == "Personal Info":
         show_personal_info()
@@ -461,4 +488,4 @@ with st.container():
     elif page == "Herb Check":
         show_herb(client, model_name)
     elif page == "quick_start":
-        show_quick_start(client, model_name)  # Call the imported quick start function
+        show_quick_start(client, model_name)
