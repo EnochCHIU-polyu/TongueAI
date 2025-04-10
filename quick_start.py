@@ -1782,8 +1782,11 @@ def show_quick_start_complete():
         
         # Tongue analysis summary
         score = st.session_state.get('tongue_analysis_score', 'N/A')
-        score_color = "#2ecc71" if score >= 80 else "#f39c12" if score >= 60 else "#e74c3c"
-        
+        if score != 'N/A':
+            score_color = "#2ecc71" if score >= 80 else "#f39c12" if score >= 60 else "#e74c3c"
+        else:
+            score_color = "#666"
+
         st.markdown(f"""
         <div style="border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
             <h4 style="color: #5D5CDE; margin-bottom: 15px;">{'👅 Tongue Diagnosis' if lang == 'ENG' else '👅 舌診分析'}</h4>
@@ -1887,9 +1890,12 @@ def show_quick_start_complete():
     
     with col2:
         if st.button(
-            "💬 " + ("Open AI Chat" if lang == "ENG" else "打開AI聊天"), 
+            #set the button that reset the quick start step to 1
+            "🔄 " + ("Start Over" if lang == "ENG" else "重新開始"),
             type="secondary",
             use_container_width=True
         ):
-            st.session_state.page = "Chat"
+            st.session_state.page = "Quick Start"
+            st.session_state.quick_start_step = 1
+            st.session_state.personal_info_step = 1
             st.rerun()

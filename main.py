@@ -215,6 +215,9 @@ def nav_button(label, icon, page_name, lang):
         type="primary" if st.session_state.page == page_name else "secondary"
     ):
         st.session_state.page = page_name
+        if st.session_state.quick_start_step != 5:
+            st.session_state.personal_info_step = 1
+            st.session_state.quick_start_step = 1
         st.rerun()
 
 # Function to show the main page
@@ -243,7 +246,9 @@ def show_main():
         use_container_width=True
     ):
         st.session_state.page = "quick_start"
-        st.session_state.quick_start_step = 1
+        if st.session_state.quick_start_step != 5:
+            st.session_state.personal_info_step = 1
+            st.session_state.quick_start_step = 1
         st.rerun()
     
     # Feature cards
