@@ -47,6 +47,79 @@ def get_season_based_on_date():
     else:
         return "Winter", "冬季"
 
+def get_weather_emoji(icon_code):
+    """Return appropriate emoji based on HKO weather icon code."""
+    # HKO icon codes mapping to emojis
+    icon_map = {
+        50: "☀️",  # Sunny
+        51: "🌤️",  # Sunny Periods
+        52: "🌤️",  # Sunny Intervals
+        53: "🌤️",  # Sunny Periods with A Few Showers
+        54: "🌦️",  # Sunny Intervals with Showers
+        60: "☁️",  # Cloudy
+        61: "☁️",  # Overcast
+        62: "🌧️",  # Light Rain
+        63: "🌧️",  # Rain
+        64: "⛈️",  # Heavy Rain
+        65: "⛈️",  # Thunderstorms
+        70: "🌫️",  # Mist
+        71: "🌫️",  # Mist
+        72: "🌫️",  # Haze
+        73: "🌫️",  # Fog
+        74: "🌫️",  # Mist/Fog
+        75: "🌫️",  # Haze
+        76: "🌁",  # Smog
+        77: "🌫️",  # Misty/Foggy
+        80: "🌞",  # Hot
+        81: "☀️",  # Warm
+        82: "😎",  # Dry
+        83: "🌫️",  # Humid
+        84: "❄️",  # Cold
+        85: "🌡️",  # Cool
+        90: "⛈️",  # Thunderstorms
+        91: "⛈️",  # Isolated Thunderstorms
+        92: "⛈️",  # Occasional Thunderstorms
+        93: "⛈️",  # Thunderstorms with Heavy Rain
+    }
+    
+    # Return the emoji if code exists, otherwise return a default
+    return icon_map.get(icon_code, "🌡️")
+
+def get_weather_description(icon_code):
+    """Return weather description based on HKO weather icon code."""
+    icon_descriptions = {
+        50: "Sunny", 
+        51: "Sunny Periods", 
+        52: "Sunny Intervals", 
+        53: "Sunny Periods with A Few Showers", 
+        54: "Sunny Intervals with Showers", 
+        60: "Cloudy", 
+        61: "Overcast", 
+        62: "Light Rain", 
+        63: "Rain", 
+        64: "Heavy Rain", 
+        65: "Thunderstorms", 
+        70: "Mist", 
+        71: "Mist", 
+        72: "Haze", 
+        73: "Fog", 
+        74: "Mist/Fog", 
+        75: "Haze", 
+        76: "Smog", 
+        77: "Misty/Foggy", 
+        80: "Hot", 
+        81: "Warm", 
+        82: "Dry", 
+        83: "Humid", 
+        84: "Cold", 
+        85: "Cool", 
+        90: "Thunderstorms", 
+        91: "Isolated Thunderstorms", 
+        92: "Occasional Thunderstorms", 
+        93: "Thunderstorms with Heavy Rain",
+    }
+    return icon_descriptions.get(icon_code, "Unknown")
+
 def extract_advice_sections(advice_text):
     """Extract sections from the advice text."""
     mindful_pattern = r"(?:What should I be mindful of today:|今天應該注意什麼：)(.*?)(?:Traditional Chinese Medicine prescription:|中藥處方：)"
@@ -72,6 +145,51 @@ def extract_advice_sections(advice_text):
     
     return mindful, prescription
 
+def get_hko_weather():
+    """Get current weather data using Hong Kong Observatory API."""
+    try:
+        # Use Hong Kong Observatory API
+        url = "https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=en"
+        
+        response = requests.get(url)
+        if response.status_code == 200:
+            weather_data = response.json()
+            
+            # Extract icon code
+            icon_code = weather_data.get('icon', [None])[0]
+            
+            # Extract temperature (using Hong Kong Observatory as default)
+            temp_data = next((item for item in weather_data.get('temperature', {}).get('data', []) 
+                              if item.get('place') == 'Hong Kong Observatory'), None)
+            temperature = temp_data.get('value') if temp_data else None
+            
+            # Extract humidity
+            humidity_data = next((item for item in weather_data.get('humidity', {}).get('data', []) 
+                                if item.get('place') == 'Hong Kong Observatory'), None)
+            humidity = humidity_data.get('value') if humidity_data else None
+            
+            # Extract warnings if available
+            warnings = weather_data.get('warningMessage', [])
+            
+            # Get rainfall info (averaging all districts)
+            rainfall_data = weather_data.get('rainfall', {}).get('data', [])
+            avg_rainfall = sum(item.get('max', 0) for item in rainfall_data) / len(rainfall_data) if rainfall_data else 0
+            
+            return {
+                "temperature": temperature,
+                "humidity": humidity,
+                "icon_code": icon_code,
+                "description": get_weather_description(icon_code) if icon_code else "Unknown",
+                "warnings": warnings,
+                "rainfall": avg_rainfall,
+                "update_time": weather_data.get('updateTime')
+            }
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Error fetching weather data: {str(e)}")
+        return None
+
 def show_weather():
     # Initialize session state variables
     if 'weather_info' not in st.session_state:
@@ -84,11 +202,13 @@ def show_weather():
         st.session_state.language = "ENG"
     if 'weather_loading' not in st.session_state:
         st.session_state.weather_loading = False
+    if 'hko_weather_data' not in st.session_state:
+        st.session_state.hko_weather_data = None
         
     lang = st.session_state.language
     
     # Page header
-    st.markdown(f"<h1 style='color: #5D5CDE;'>{'Traditional Chinese Calendar' if lang == 'ENG' else '中國傳統曆法'}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='color: #5D5CDE;'>{'Weather & Chinese Calendar' if lang == 'ENG' else '天氣與中國曆法'}</h1>", unsafe_allow_html=True)
     
     # Get date and season information
     date = datetime.datetime.now()
@@ -106,10 +226,80 @@ def show_weather():
     
     season_eng, season_chi = get_season_based_on_date()
     
-    # Main layout using columns
-    date_col, lunar_col = st.columns([1, 1])
+    # Get current weather data if not already in session state
+    if st.session_state.hko_weather_data is None:
+        with st.spinner("Fetching current weather data..." if lang == "ENG" else "獲取當前天氣數據..."):
+            weather_data = get_hko_weather()
+            st.session_state.hko_weather_data = weather_data
+    else:
+        weather_data = st.session_state.hko_weather_data
     
-    with date_col:
+    # Main layout - current weather at the top
+    if weather_data:
+        icon_code = weather_data.get('icon_code')
+        weather_emoji = get_weather_emoji(icon_code) if icon_code else "🌡️"
+        weather_description = weather_data.get('description', 'Unknown')
+        
+        # Format the update time
+        update_time_str = weather_data.get('update_time', '')
+        try:
+            # Parse the ISO format date
+            update_time = datetime.datetime.strptime(update_time_str.split('+')[0], '%Y-%m-%dT%H:%M:%S')
+            update_time_formatted = update_time.strftime('%H:%M %d/%m/%Y')
+        except:
+            update_time_formatted = update_time_str
+        
+        st.markdown(f"""
+        <div style="border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+                    background: linear-gradient(135deg, #5D5CDE 0%, #8A89FF 100%); color: white;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 28px; margin-bottom: 5px;">{'Hong Kong' if lang == 'ENG' else '香港'}</h2>
+                    <div style="font-size: 16px; opacity: 0.9;">{date.strftime('%A, %d %B %Y') if lang == 'ENG' else f"{date.year}年{date.month}月{date.day}日 {day_of_week_chinese}"}</div>
+                    <div style="font-size: 12px; opacity: 0.8;">{'Updated' if lang == 'ENG' else '更新於'}: {update_time_formatted}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 40px; font-weight: bold;">{weather_data['temperature']}°C</div>
+                    <div style="font-size: 16px; opacity: 0.9;">{'Humidity' if lang == 'ENG' else '濕度'}: {weather_data['humidity']}%</div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 20px; align-items: center;">
+                <div style="display: flex; align-items: center;">
+                    <div style="font-size: 36px; margin-right: 15px;">{weather_emoji}</div>
+                    <div>
+                        <div style="font-size: 18px; text-transform: capitalize;">{weather_description}</div>
+                        <div style="font-size: 14px; opacity: 0.9;">
+                            {'Rainfall' if lang == 'ENG' else '降雨量'}: {weather_data['rainfall']} mm
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 16px;">{'Current Season' if lang == 'ENG' else '當前季節'}</div>
+                    <div style="font-size: 20px; font-weight: bold;">{season_eng if lang == 'ENG' else season_chi}</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # Add warnings if any
+        if weather_data.get('warnings'):
+            warnings_html = '<div style="margin-top: 15px; padding: 10px; background-color: rgba(255, 255, 255, 0.2); border-radius: 8px;">'
+            warnings_html += f'<div style="font-weight: bold; margin-bottom: 5px;">{"Weather Warnings" if lang == "ENG" else "天氣警告"}:</div>'
+            for warning in weather_data['warnings']:
+                warnings_html += f'<div style="font-size: 14px; padding: 3px 0;">⚠️ {warning}</div>'
+            warnings_html += '</div>'
+            st.markdown(warnings_html, unsafe_allow_html=True)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Add refresh button for weather data
+        if st.button("🔄 " + ("Refresh Weather" if lang == "ENG" else "刷新天氣"), key="refresh_weather"):
+            st.session_state.hko_weather_data = None
+            st.rerun()
+    
+    # Calendar section - 2 columns for Gregorian and Lunar
+    col_left, col_right = st.columns([1, 1])
+    
+    with col_left:
         # Gregorian calendar card
         st.markdown(f"""
         <div style=" border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
@@ -133,7 +323,7 @@ def show_weather():
     # Make API request to get lunar date information
     try:
         if not st.session_state.weather_loading:
-            with lunar_col:
+            with col_right:
                 with st.spinner('Loading lunar calendar data...' if lang == 'ENG' else '正在加載農曆數據...'):
                     st.session_state.weather_loading = True
                     
@@ -214,13 +404,13 @@ def show_weather():
                     st.session_state.weather_loading = False
         
         # Display lunar calendar information if available
-        with lunar_col:
+        with col_right:
             if hasattr(st.session_state, 'lunar_info'):
                 lunar_info = st.session_state.lunar_info
                 
                 # Lunar calendar card
                 st.markdown(f"""
-                <div style=" border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                <div style=" border-radius: 10px; padding: 20px; padding-bottom: 52px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
                     <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                         🏮 {'Lunar Calendar' if lang == 'ENG' else '農曆'}
                     </h3>
@@ -253,9 +443,142 @@ def show_weather():
                 </div>
                 """, unsafe_allow_html=True)
         
+        # Weather-Based TCM Considerations section (if weather data available)
+        if weather_data:
+            st.markdown(f"""
+                <h3 style=" margin: 30px 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    📊 {'Weather-Based TCM Considerations' if lang == 'ENG' else '基於天氣的中醫考慮因素'}
+                </h3>
+            """, unsafe_allow_html=True)
+            
+            # TCM weather consideration cards
+            col1, col2, col3 = st.columns(3)
+            
+            # Temperature considerations
+            with col1:
+                temp = weather_data['temperature']
+                
+                if temp < 10:
+                    tcm_temp_effect = "Cold weather can cause qi stagnation and yang deficiency" if lang == "ENG" else "寒冷天氣可能導致氣滯和陽虛"
+                    tcm_temp_advice = "Warm foods, ginger tea, protect lower back" if lang == "ENG" else "溫熱食物，薑茶，保護下背部"
+                    tcm_temp_icon = "❄️"
+                elif temp < 20:
+                    tcm_temp_effect = "Cool weather may slow circulation and metabolism" if lang == "ENG" else "涼爽天氣可能減慢循環和新陳代謝"
+                    tcm_temp_advice = "Moderate exercise, warming spices, protect neck" if lang == "ENG" else "適度運動，溫熱香料，保護頸部"
+                    tcm_temp_icon = "🍃"
+                elif temp < 28:
+                    tcm_temp_effect = "Mild temperature promotes balanced qi flow" if lang == "ENG" else "溫和氣溫促進平衡的氣流"
+                    tcm_temp_advice = "Regular exercise, balanced diet, outdoor activities" if lang == "ENG" else "定期運動，均衡飲食，戶外活動"
+                    tcm_temp_icon = "🌱"
+                elif temp < 33:
+                    tcm_temp_effect = "Warm weather can deplete yin energy and cause fatigue" if lang == "ENG" else "溫暖天氣可能消耗陰能量並導致疲勞"
+                    tcm_temp_advice = "Hydrate well, cooling foods, rest at midday" if lang == "ENG" else "充分補水，涼性食物，中午休息"
+                    tcm_temp_icon = "☀️"
+                else:
+                    tcm_temp_effect = "Hot weather creates excess heat and may harm heart/lung balance" if lang == "ENG" else "炎熱天氣產生過多熱量，可能損害心/肺平衡"
+                    tcm_temp_advice = "Mung beans, bitter melon, watermelon, reduce activity" if lang == "ENG" else "綠豆，苦瓜，西瓜，減少活動"
+                    tcm_temp_icon = "🔥"
+                
+                st.markdown(f"""
+                <div style=" border-radius: 10px; padding: 15px; height: 100%; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                    <div style="text-align: center; font-size: 24px; margin-bottom: 10px;">{tcm_temp_icon}</div>
+                    <h4 style="color: #5D5CDE; margin-bottom: 10px; text-align: center;">
+                        {'Temperature' if lang == 'ENG' else '溫度'} ({temp}°C)
+                    </h4>
+                    <div style="font-size: 14px; margin-bottom: 10px;"><strong>{'Effect' if lang == 'ENG' else '影響'}:</strong> {tcm_temp_effect}</div>
+                    <div style="font-size: 14px;"><strong>{'Advice' if lang == 'ENG' else '建議'}:</strong> {tcm_temp_advice}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Humidity considerations
+            with col2:
+                humidity = weather_data['humidity']
+                
+                if humidity < 30:
+                    tcm_humidity_effect = "Dry air can deplete body fluids and lung yin" if lang == "ENG" else "乾燥空氣可能消耗體液和肺陰"
+                    tcm_humidity_advice = "Hydrate often, use humidifier, pear or apple" if lang == "ENG" else "經常補水，使用加濕器，吃梨或蘋果"
+                    tcm_humidity_icon = "🏜️"
+                elif humidity < 50:
+                    tcm_humidity_effect = "Moderate humidity supports balanced body fluids" if lang == "ENG" else "適度濕度支持均衡的體液"
+                    tcm_humidity_advice = "Normal hydration, balance between yin and yang foods" if lang == "ENG" else "正常補水，陰陽食物平衡"
+                    tcm_humidity_icon = "🍃"
+                elif humidity < 70:
+                    tcm_humidity_effect = "Higher humidity may slow evaporation and qi movement" if lang == "ENG" else "較高濕度可能減慢蒸發和氣的運動"
+                    tcm_humidity_advice = "Light exercise, avoid damp foods like dairy" if lang == "ENG" else "輕度運動，避免乳製品等濕性食物"
+                    tcm_humidity_icon = "💧"
+                else:
+                    tcm_humidity_effect = "High humidity creates dampness that can obstruct qi" if lang == "ENG" else "高濕度產生可能阻礙氣的濕氣"
+                    tcm_humidity_advice = "Dry foods, ginger tea, diuretic herbs like corn silk" if lang == "ENG" else "乾燥食物，薑茶，玉米鬚等利尿草藥"
+                    tcm_humidity_icon = "☔"
+                
+                st.markdown(f"""
+                <div style=" border-radius: 10px; padding: 15px; height: 100%; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                    <div style="text-align: center; font-size: 24px; margin-bottom: 10px;">{tcm_humidity_icon}</div>
+                    <h4 style="color: #5D5CDE; margin-bottom: 10px; text-align: center;">
+                        {'Humidity' if lang == 'ENG' else '濕度'} ({humidity}%)
+                    </h4>
+                    <div style="font-size: 14px; margin-bottom: 10px;"><strong>{'Effect' if lang == 'ENG' else '影響'}:</strong> {tcm_humidity_effect}</div>
+                    <div style="font-size: 14px;"><strong>{'Advice' if lang == 'ENG' else '建議'}:</strong> {tcm_humidity_advice}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Weather condition considerations based on HKO icon
+            with col3:
+                icon_code = weather_data.get('icon_code')
+                weather_description = weather_data.get('description', 'Unknown')
+                
+                # Determine effects and advice based on weather type
+                if icon_code in [50, 51, 52]:  # Sunny or sunny periods
+                    tcm_condition_effect = "Sunlight encourages yang energy but may deplete yin" if lang == "ENG" else "陽光鼓勵陽能量但可能消耗陰"
+                    tcm_condition_advice = "Protect from excessive sun, balance with cooling foods" if lang == "ENG" else "避免過度陽光照射，搭配涼性食物平衡"
+                    tcm_condition_icon = "☀️"
+                elif icon_code in [60, 61]:  # Cloudy or overcast
+                    tcm_condition_effect = "Cloudy weather moderates yin-yang dynamics" if lang == "ENG" else "陰天調節陰陽動態"
+                    tcm_condition_advice = "Moderate activities, neutral foods like rice and vegetables" if lang == "ENG" else "適度活動，米飯和蔬菜等中性食物"
+                    tcm_condition_icon = "☁️"
+                elif icon_code in [53, 54, 62, 63, 64]:  # Rain or showers
+                    tcm_condition_effect = "Rain increases environmental dampness affecting spleen" if lang == "ENG" else "雨增加環境濕氣影響脾臟"
+                    tcm_condition_advice = "Avoid cold/raw foods, include warming spices" if lang == "ENG" else "避免冷/生食，添加溫熱香料"
+                    tcm_condition_icon = "🌧️"
+                elif icon_code in [65, 90, 91, 92, 93]:  # Thunderstorms
+                    tcm_condition_effect = "Storms create environmental turbulence affecting liver qi" if lang == "ENG" else "風暴產生影響肝氣的環境紊亂"
+                    tcm_condition_advice = "Stay calm, soothing teas like chrysanthemum, gentle exercise" if lang == "ENG" else "保持冷靜，菊花等舒緩茶飲，輕柔運動"
+                    tcm_condition_icon = "⛈️"
+                elif icon_code == 84:  # Cold
+                    tcm_condition_effect = "Cold weather causes qi stagnation and constriction" if lang == "ENG" else "寒冷天氣導致氣滯和收縮"
+                    tcm_condition_advice = "Warming foods, protect extremities, moderate exercise" if lang == "ENG" else "溫熱食物，保護四肢，適度運動"
+                    tcm_condition_icon = "❄️"
+                elif icon_code in [70, 71, 72, 73, 74, 75, 77]:  # Mist, haze, fog
+                    tcm_condition_effect = "Fog creates dampness that can obstruct lung qi" if lang == "ENG" else "霧產生可能阻礙肺氣的濕氣"
+                    tcm_condition_advice = "Clear warming teas, light food, respiratory exercises" if lang == "ENG" else "清熱溫茶，清淡食物，呼吸運動"
+                    tcm_condition_icon = "🌫️"
+                elif icon_code == 80:  # Hot
+                    tcm_condition_effect = "Hot weather depletes yin and can cause internal heat" if lang == "ENG" else "炎熱天氣消耗陰並可能導致內熱"
+                    tcm_condition_advice = "Cooling foods like watermelon, chrysanthemum tea, rest" if lang == "ENG" else "西瓜等涼性食物，菊花茶，休息"
+                    tcm_condition_icon = "🌞"
+                elif icon_code == 83:  # Humid
+                    tcm_condition_effect = "Humidity creates dampness affecting spleen and digestion" if lang == "ENG" else "濕度產生影響脾臟和消化的濕氣"
+                    tcm_condition_advice = "Warm spices, avoid dairy, light exercise" if lang == "ENG" else "溫熱香料，避免乳製品，輕度運動"
+                    tcm_condition_icon = "💧"
+                else:
+                    tcm_condition_effect = "Current conditions call for balanced approach" if lang == "ENG" else "當前情況呼籲平衡方法"
+                    tcm_condition_advice = "Moderate activities, balanced diet, regular rest" if lang == "ENG" else "適度活動，均衡飲食，定期休息"
+                    tcm_condition_icon = "⚖️"
+                
+                st.markdown(f"""
+                <div style=" border-radius: 10px; padding: 15px; height: 100%; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                    <div style="text-align: center; font-size: 24px; margin-bottom: 10px;">{tcm_condition_icon}</div>
+                    <h4 style="color: #5D5CDE; margin-bottom: 10px; text-align: center;">
+                        {'Weather Condition' if lang == 'ENG' else '天氣狀況'} ({weather_description})
+                    </h4>
+                    <div style="font-size: 14px; margin-bottom: 10px;"><strong>{'Effect' if lang == 'ENG' else '影響'}:</strong> {tcm_condition_effect}</div>
+                    <div style="font-size: 14px;"><strong>{'Advice' if lang == 'ENG' else '建議'}:</strong> {tcm_condition_advice}</div>
+                </div>
+                """, unsafe_allow_html=True)
+        
         # TCM Advice section
         st.markdown(f"""
-            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+            <h3 style=" margin: 30px 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 🌿 {'Daily TCM Guidance' if lang == 'ENG' else '每日中醫指導'}
             </h3>
         """, unsafe_allow_html=True)
@@ -278,13 +601,24 @@ def show_weather():
         if generate_new_advice and hasattr(st.session_state, 'lunar_info') and st.session_state.lunar_info:
             lunar_info = st.session_state.lunar_info
             
+            # Include current weather data in the prompt if available
+            weather_prompt = ""
+            if weather_data:
+                weather_description = weather_data.get('description', 'Unknown')
+                weather_prompt = f", with current temperature of {weather_data['temperature']}°C, humidity {weather_data['humidity']}%, and {weather_description} weather"
+            
             with st.spinner('Generating TCM advice...' if lang == 'ENG' else '生成中醫建議...'):
                 if lang == "ENG":
-                    user_prompt = f"According to traditional Chinese medicine, today is {lunar_info['lunar_year']}, {lunar_info['lunar_date']}, which is in {season_eng}. Provide advice in the following format:\n\nWhat should I be mindful of today: [provide 3-4 seasonal health tips based on TCM principles for this specific lunar date and season]\n\nTraditional Chinese Medicine prescription: [suggest 2-3 specific herbal formulas or teas that would be beneficial today, with brief explanations of their benefits]"
-                    system_prompt = "You are a highly knowledgeable Traditional Chinese Medicine doctor with deep understanding of seasonal health practices. Provide practical, concise advice that connects lunar calendar dates with appropriate TCM recommendations."
+                    user_prompt = f"According to traditional Chinese medicine, today is {lunar_info['lunar_year']}, {lunar_info['lunar_date']}, which is in {season_eng}{weather_prompt}. Provide advice in the following format:\n\nWhat should I be mindful of today: [provide 3-4 seasonal health tips based on TCM principles for this specific lunar date, season, and current weather conditions]\n\nTraditional Chinese Medicine prescription: [suggest 2-3 specific herbal formulas or teas that would be beneficial today, with brief explanations of their benefits]"
+                    system_prompt = "You are a highly knowledgeable Traditional Chinese Medicine doctor with deep understanding of seasonal health practices and weather-related health conditions. Provide practical, concise advice that connects lunar calendar dates and current weather with appropriate TCM recommendations."
                 else:
-                    user_prompt = f"根據傳統中醫的觀點，今天是{lunar_info['lunar_year']}，{lunar_info['lunar_date']}，現在是{season_chi}。請按以下格式提供建議：\n\n今天應該注意什麼：[根據中醫原則，提供3-4個針對這個特定農曆日期和季節的季節性健康提示]\n\n中藥處方：[建議2-3種對今天有益的特定草藥配方或茶，並簡要說明其益處]"
-                    system_prompt = "您是一位知識淵博的中醫醫生，對季節性健康實踐有深入的了解。提供將農曆日期與適當的中醫建議相連接的實用、簡潔的建議。"
+                    weather_prompt_cn = ""
+                    if weather_data:
+                        weather_description = weather_data.get('description', 'Unknown')
+                        weather_prompt_cn = f"，當前溫度為{weather_data['temperature']}°C，濕度{weather_data['humidity']}%，天氣{weather_description}"
+                    
+                    user_prompt = f"根據傳統中醫的觀點，今天是{lunar_info['lunar_year']}，{lunar_info['lunar_date']}，現在是{season_chi}{weather_prompt_cn}。請按以下格式提供建議：\n\n今天應該注意什麼：[根據中醫原則，提供3-4個針對這個特定農曆日期、季節和當前天氣狀況的季節性健康提示]\n\n中藥處方：[建議2-3種對今天有益的特定草藥配方或茶，並簡要說明其益處]"
+                    system_prompt = "您是一位知識淵博的中醫醫生，對季節性健康實踐和與天氣相關的健康狀況有深入的了解。提供將農曆日期和當前天氣與適當的中醫建議相連接的實用、簡潔的建議。"
 
                 advice = advice_llm(system_prompt, user_prompt, model_type="openai")
                 
@@ -306,7 +640,7 @@ def show_weather():
                 
                 with mindful_col:
                     st.markdown(f"""
-                    <div style=" border-radius: 8px; padding: 15px; height: 100%;">
+                    <div style=" border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
                         <h4 style="color: #5D5CDE; margin-bottom: 10px; font-size: 18px;">
                             {'Today\'s Mindfulness' if lang == 'ENG' else '今日注意事項'}
                         </h4>
@@ -318,7 +652,7 @@ def show_weather():
                 
                 with prescription_col:
                     st.markdown(f"""
-                    <div style=" border-radius: 8px; padding: 15px; height: 100%;">
+                    <div style=" border-radius: 8px; padding: 15px; height: 100%; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
                         <h4 style="color: #E74C3C; margin-bottom: 10px; font-size: 18px;">
                             {'Recommended Remedies' if lang == 'ENG' else '推薦的療法'}
                         </h4>
@@ -330,7 +664,7 @@ def show_weather():
             else:
                 # Just display the full advice
                 st.markdown(f"""
-                <div style="; border-radius: 8px; padding: 15px;">
+                <div style="border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
                     <div style=" font-size: 14px; white-space: pre-line;">
                         {advice}
                     </div>
@@ -357,20 +691,29 @@ def show_weather():
             with col2:
                 if st.button("🔄 " + ("Refresh" if lang == "ENG" else "刷新"), use_container_width=True):
                     st.session_state.advice = None
+                    st.session_state.hko_weather_data = None
                     st.experimental_rerun()
         else:
             # Display placeholder if advice not yet generated
             st.markdown("""
-            <div style=" border-radius: 8px; padding: 15px; text-align: center;">
-                <div style=" padding: 40px 0;">
+            <div style="border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
+                <div style="padding: 40px 0;">
                     Generating personalized TCM advice...
                 </div>
             </div>
             """, unsafe_allow_html=True)
         
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Seasonal health tips
+        st.markdown(f"""
+            <h3 style=" margin: 30px 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                🍃 {'Seasonal Health Tips' if lang == 'ENG' else '季節健康提示'}
+            </h3>
+            <div style=" margin-bottom: 20px; font-size: 16px;">
+                {'According to TCM, each season requires different approaches to maintain optimal health and balance.' if lang == 'ENG' else '根據中醫理論，每個季節都需要不同的方法來保持最佳健康和平衡。'}
+            </div>
+        """, unsafe_allow_html=True)
         
-        # Health tips based on season
+        # Season-specific health tips
         season_tips = {
             "Spring": {
                 "ENG": [
@@ -433,28 +776,56 @@ def show_weather():
         current_season = season_eng
         tips = season_tips[current_season]["ENG" if lang == "ENG" else "中文"]
         
-        # Seasonal health tips
-        st.markdown(f"""
-            <h3 style=" margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                🍃 {'Seasonal Health Tips' if lang == 'ENG' else '季節健康提示'}
-            </h3>
-            <div style=" margin-bottom: 20px; font-size: 16px;">
-                {'According to TCM, each season requires different approaches to maintain optimal health and balance.' if lang == 'ENG' else '根據中醫理論，每個季節都需要不同的方法來保持最佳健康和平衡。'}
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-        """, unsafe_allow_html=True)
+        # Display seasonal tips in a grid
+        st.markdown("""<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">""", unsafe_allow_html=True)
         
         for i, tip in enumerate(tips):
             icon = ["🌱", "🍵", "🥗", "🧘‍♀️"][i % 4]
             st.markdown(f"""
-            <div style=" border-radius: 8px; padding: 15px;">
+            <div style="border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
                 <div style="font-size: 24px; margin-bottom: 10px;">{icon}</div>
-                <div style=" font-size: 14px;">{tip}</div>
+                <div style="font-size: 14px;">{tip}</div>
             </div>
             """, unsafe_allow_html=True)
         
-        st.markdown("</div></div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Add info about Hong Kong temperatures
+        district_temperatures = []
+        # Add info about Hong Kong temperatures
+        if weather_data and 'temperature' in weather_data:
+            # Get district temperature data from the API response
+            temp_data = weather_data.get('temperature', {})
+            
+            # Check if temp_data is a dictionary before accessing 'data'
+            if isinstance(temp_data, dict) and 'data' in temp_data:
+                district_temps = temp_data['data']
+                
+                if district_temps and isinstance(district_temps, list):
+                    # Create a dataframe of district temperatures for display
+                    temp_df = pd.DataFrame(district_temps)
+                    
+                    if not temp_df.empty:
+                        # Sort by temperature value
+                        temp_df = temp_df.sort_values('value', ascending=False)
+                        
+                        # Display district temperatures
+                        st.markdown(f"""
+                            <h3 style="margin: 30px 0 15px 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                                🌡️ {'District Temperatures' if lang == 'ENG' else '各區溫度'}
+                            </h3>
+                        """, unsafe_allow_html=True)
+                        
+                        st.dataframe(
+                            temp_df,
+                            column_config={
+                                "place": "District" if lang == "ENG" else "地區",
+                                "value": "Temperature (°C)" if lang == "ENG" else "溫度 (°C)",
+                                "unit": None  # Hide unit column
+                            },
+                            hide_index=True,
+                            use_container_width=True
+                        )
         
     except Exception as e:
         st.error(f"An error occurred: {str(e)}")
-    
