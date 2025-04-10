@@ -1785,7 +1785,11 @@ def show_quick_start_complete():
         if score == 'N/A':
             score_color = "#666"
         else:
-            score_color = "#2ecc71" if score >= 80 else "#f39c12" if score >= 60 else "#e74c3c"
+            try:
+                score_num = float(score)
+                score_color = "#2ecc71" if score_num >= 80 else "#f39c12" if score_num >= 60 else "#e74c3c"
+            except (ValueError, TypeError):
+                score_color = "#666"
             
 
         st.markdown(f"""
