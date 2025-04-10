@@ -87,12 +87,15 @@ def show_quick_start(client, model_name):
         show_quick_start_complete()
 
 def show_quick_start_personal_info():
-    """Step 1: Collect basic personal information one question at a time"""
+    """Step 1: Collect basic personal information with elderly-friendly, interactive inputs"""
     lang = st.session_state.language
     
+    # Main header with custom styling
     st.markdown(f"""
-    <h2 style='color: #5D5CDE; margin-bottom: 20px;'>{'Step 1: Tell us about yourself' if lang == 'ENG' else '步驟1：告訴我們關於您的信息'}</h2>
-    <p style='margin-bottom: 20px;'>{'We need some basic information to provide personalized TCM recommendations.' if lang == 'ENG' else '我們需要一些基本信息來提供個性化的中醫建議。'}</p>
+    <div style="background: linear-gradient(to right, #5D5CDE, #8583E1); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+        <h2 style="color: white; margin-bottom: 10px;">{'Step 1: Tell us about yourself' if lang == 'ENG' else '步驟1：告訴我們關於您的信息'}</h2>
+        <p style="color: rgba(255, 255, 255, 0.9); font-size: 16px;">{'We need some basic information to provide personalized TCM recommendations.' if lang == 'ENG' else '我們需要一些基本信息來提供個性化的中醫建議。'}</p>
+    </div>
     """, unsafe_allow_html=True)
     
     # Initialize the personal info step tracker if not already set
@@ -102,25 +105,107 @@ def show_quick_start_personal_info():
     # Total number of personal info questions
     total_steps = 5
     
-    # Show progress within this step
-    sub_progress = st.session_state.personal_info_step / total_steps
-    st.progress(sub_progress, "Completing your profile" if lang == "ENG" else "完成您的檔案")
+    # Custom CSS for elder-friendly UI
+    st.markdown("""
+    <style>
+    /* Large buttons for easier tapping */
+    .large-button {
+        padding: 15px !important;
+        font-size: 18px !important;
+        border-radius: 8px !important;
+        min-height: 60px !important;
+    }
     
-    # Display the current question based on the sub-step
+    /* Larger text and controls */
+    .elder-friendly label, .elder-friendly div {
+        font-size: 18px !important;
+    }
+    
+    /* Colorful, larger selection buttons */
+    .selection-button {
+        display: block;
+        background-color: #f8f9fa;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 15px;
+        margin: 8px 0;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 18px;
+    }
+    .selection-button:hover {
+        background-color: #f0f0f0;
+        border-color: #d0d0d0;
+    }
+    .selection-button.selected {
+        background-color: rgba(93, 92, 222, 0.15);
+        border-color: #5D5CDE;
+        font-weight: bold;
+    }
+    
+    /* Custom slider styling */
+    .custom-slider {
+        padding: 25px 0px 35px 0px;
+    }
+    .custom-slider .stSlider {
+        height: 25px !important;
+    }
+    .custom-slider p {
+        font-size: 16px !important;
+        font-weight: 500 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Large, clear step indicators with both text and numbers
+    step_titles = [
+        ("Personal", "個人資料"),
+        ("Age & Gender", "年齡和性別"),
+        ("Body Stats", "身體數據"),
+        ("Exercise", "運動"),
+        ("Health", "健康")
+    ]
+    
+    # Display step indicator
+    st.markdown(f"""
+    <div style="margin-bottom: 30px; text-align: center;">
+        <h3 style="color: #5D5CDE; font-size: 24px; margin-bottom: 5px;">
+            {f"Step {st.session_state.personal_info_step} of {total_steps}" if lang == "ENG" else f"步驟 {st.session_state.personal_info_step} / {total_steps}"}
+        </h3>
+        <div style="font-size: 20px; font-weight: bold; color: #333;">
+            {step_titles[st.session_state.personal_info_step-1][0] if lang == "ENG" else step_titles[st.session_state.personal_info_step-1][1]}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Display progress bar
+    sub_progress = st.session_state.personal_info_step / total_steps
+    st.progress(sub_progress)
+    
+    # Step 1: Name with large buttons for common names
     if st.session_state.personal_info_step == 1:
-        # Name input
-        st.markdown(f"### {'What is your name?' if lang == 'ENG' else '您的名字是什麼？'}")
-        name = st.text_input(
-            "Name" if lang == "ENG" else "姓名", 
-            value=st.session_state.get('name', ''),
-            placeholder="Your name" if lang == "ENG" else "您的姓名",
-            label_visibility="collapsed",
-            key="name_large"
-        )
+        st.markdown(f"""
+        <h3 style="color: #5D5CDE; margin: 20px 0; font-size: 22px; text-align: center;">
+            {'What is your name?' if lang == 'ENG' else '您的名字是什麼？'}
+        </h3>
+        """, unsafe_allow_html=True)
         
-        # Navigation buttons
-        col1, col2 = st.columns([1, 1])
+        col1, col2, col3 = st.columns([1, 3, 1])
         with col2:
+            # Or allow custom name input with larger text field
+            st.markdown("<p style='text-align: center; margin-top: 20px;'></p>", unsafe_allow_html=True)
+            name = st.text_input(
+                "Name" if lang == "ENG" else "姓名", 
+                value=st.session_state.get('name', ''),
+                placeholder="Your name" if lang == "ENG" else "您的姓名",
+                label_visibility="collapsed",
+                key="name_large"
+            )
+            
+            # Large, clearly labeled buttons
+            st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+            
             if st.button(
                 "Next ➡️" if lang == "ENG" else "下一步 ➡️", 
                 type="primary",
@@ -130,8 +215,7 @@ def show_quick_start_personal_info():
                 st.session_state.name = name
                 st.session_state.personal_info_step = 2
                 st.rerun()
-        
-        with col1:
+            
             if st.button(
                 "Skip All" if lang == "ENG" else "跳過全部", 
                 type="secondary",
@@ -142,38 +226,163 @@ def show_quick_start_personal_info():
                 st.session_state.quick_start_step = 2
                 st.rerun()
     
+    # Step 2: Age and Gender with tap interface rather than typing
     elif st.session_state.personal_info_step == 2:
-        # Age and Gender
-        st.markdown(f"### {'What is your age and gender?' if lang == 'ENG' else '您的年齡和性別是？'}")
+        st.markdown(f"""
+        <h3 style="color: #5D5CDE; margin: 20px 0; font-size: 22px; text-align: center;">
+            {'What is your age and gender?' if lang == 'ENG' else '您的年齡和性別是？'}
+        </h3>
+        """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 1])
+        # Age selection with visual buttons for age ranges
+        st.markdown(f"""
+        <p style="font-weight: 500; font-size: 18px; margin-bottom: 15px;">
+            {'Select your age range:' if lang == 'ENG' else '選擇您的年齡範圍:'}
+        </p>
+        """, unsafe_allow_html=True)
         
-        with col1:
-            age = st.number_input(
-                "Age" if lang == "ENG" else "年齡", 
-                min_value=0, 
-                max_value=120, 
-                value=st.session_state.get('age', 0),
-                step=1,
-                format="%d",
-                key="age_large"
-            )
+        # Age ranges as clickable buttons
+        age_ranges = ["Under 18", "18-30", "31-45", "46-60", "61-75", "Over 75"] if lang == "ENG" else [
+            "18歲以下", "18-30歲", "31-45歲", "46-60歲", "61-75歲", "75歲以上"
+        ]
         
-        with col2:
-            gender_options = ["M", "F", "---"]
-            gender_index = gender_options.index(st.session_state.get('gender', '---')) if st.session_state.get('gender', '---') in gender_options else 2
-            gender = st.selectbox(
-                "Gender" if lang == "ENG" else "性別", 
-                gender_options, 
-                index=gender_index,
-                key="gender_large"
-            )
+        # Create a layout with 3 buttons per row
+        for i in range(0, len(age_ranges), 3):
+            cols = st.columns(3)
+            for j in range(3):
+                if i + j < len(age_ranges):
+                    with cols[j]:
+                        age_range = age_ranges[i + j]
+                        if st.button(
+                            age_range, 
+                            key=f"age_range_{i+j}",
+                            use_container_width=True,
+                        ):
+                            # Map age ranges to representative values
+                            age_map = {
+                                0: 16, 1: 25, 2: 38, 3: 53, 4: 68, 5: 80
+                            }
+                            st.session_state.age = age_map[i + j]
+                            
+                            # Show exact age refinement with a slider
+                            st.session_state.show_age_slider = True
+                            st.rerun()
+        
+        # Show the slider if button was clicked
+        if st.session_state.get('show_age_slider', False):
+            st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
+            
+            if st.session_state.age < 18:
+                min_age, max_age = 1, 18
+            elif st.session_state.age <= 30:
+                min_age, max_age = 18, 30
+            elif st.session_state.age <= 45:
+                min_age, max_age = 31, 45
+            elif st.session_state.age <= 60:
+                min_age, max_age = 46, 60
+            elif st.session_state.age <= 75:
+                min_age, max_age = 61, 75
+            else:
+                min_age, max_age = 75, 100
+            
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.markdown(f"""
+                <p style="text-align: center; font-weight: 500; font-size: 18px; margin-bottom: 10px;">
+                    {'Refine your age:' if lang == 'ENG' else '精確您的年齡:'}
+                </p>
+                """, unsafe_allow_html=True)
+                
+                # Display current age in big digits
+                st.markdown(f"""
+                <div style="text-align: center; font-size: 48px; font-weight: bold; color: #5D5CDE; margin: 10px 0;">
+                    {st.session_state.age}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Large, clickable age adjustment buttons
+                age_col1, age_col2, age_col3 = st.columns([1, 1, 1])
+                with age_col1:
+                    if st.button("➖", key="age_minus", use_container_width=True):
+                        if st.session_state.age > min_age:
+                            st.session_state.age -= 1
+                            st.rerun()
+                
+                with age_col3:
+                    if st.button("➕", key="age_plus", use_container_width=True):
+                        if st.session_state.age < max_age:
+                            st.session_state.age += 1
+                            st.rerun()
+        
+        # Divider
+        st.markdown("<hr style='margin: 30px 0;'>", unsafe_allow_html=True)
+        
+        # Gender selection with visual icons
+        st.markdown(f"""
+        <p style="font-weight: 500; font-size: 18px; margin-bottom: 15px;">
+            {'Select your gender:' if lang == 'ENG' else '選擇您的性別:'}
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Large, icon-based gender selection buttons
+        gen_col1, gen_col2, gen_col3 = st.columns([1, 1, 1])
+        
+        with gen_col1:
+            if st.button(
+                "♂️ " + ("Male" if lang == "ENG" else "男性"),
+                key="gender_male",
+                use_container_width=True,
+            ):
+                st.session_state.gender = "M"
+        
+        with gen_col2:
+            if st.button(
+                "♀️ " + ("Female" if lang == "ENG" else "女性"),
+                key="gender_female",
+                use_container_width=True,
+            ):
+                st.session_state.gender = "F"
+                
+        with gen_col3:
+            if st.button(
+                "⚪ " + ("Other" if lang == "ENG" else "其他"),
+                key="gender_other",
+                use_container_width=True,
+            ):
+                st.session_state.gender = "---"
+        
+        # Display current selections
+        if st.session_state.get('age', 0) > 0 or st.session_state.get('gender', '') != '':
+            st.markdown("<div style='margin: 30px 0;'></div>", unsafe_allow_html=True)
+            
+            age_display = str(st.session_state.get('age', '')) if st.session_state.get('age', 0) > 0 else "Not set"
+            gender_display = {"M": "Male", "F": "Female", "---": "Other"}.get(st.session_state.get('gender', ''), "Not set") if lang == "ENG" else {
+                "M": "男性", "F": "女性", "---": "其他"
+            }.get(st.session_state.get('gender', ''), "未設置")
+            
+            st.markdown(f"""
+            <div style="background-color: #f8f9fa; border-radius: 10px; padding: 15px; margin-bottom: 20px; text-align: center;">
+                <p style="font-size: 18px; margin-bottom: 10px;">
+                    {'Your selections:' if lang == 'ENG' else '您的選擇:'}
+                </p>
+                <div style="display: flex; justify-content: center; gap: 40px;">
+                    <div>
+                        <div style="font-weight: bold; color: #5D5CDE;">{'Age' if lang == 'ENG' else '年齡'}</div>
+                        <div style="font-size: 20px;">{age_display}</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold; color: #5D5CDE;">{'Gender' if lang == 'ENG' else '性別'}</div>
+                        <div style="font-size: 20px;">{gender_display}</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
         
         # Navigation buttons
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button(
-                "⬅️ Back" if lang == "ENG" else "⬅️ 返回", 
+                "⬅️ " + ("Back" if lang == "ENG" else "返回"), 
                 type="secondary",
                 use_container_width=True,
                 key="age_back"
@@ -188,8 +397,6 @@ def show_quick_start_personal_info():
                 use_container_width=True,
                 key="age_next"
             ):
-                st.session_state.age = age
-                st.session_state.gender = gender
                 st.session_state.personal_info_step = 3
                 st.rerun()
         
@@ -203,72 +410,238 @@ def show_quick_start_personal_info():
                 st.session_state.personal_info_step = 3
                 st.rerun()
     
+    # Step 3: Height and Weight with sliders instead of number inputs
     elif st.session_state.personal_info_step == 3:
-        # Height and Weight
-        st.markdown(f"### {'What is your height and weight?' if lang == 'ENG' else '您的身高和體重是？'}")
+        st.markdown(f"""
+        <h3 style="color: #5D5CDE; margin: 20px 0; font-size: 22px; text-align: center;">
+            {'What is your height and weight?' if lang == 'ENG' else '您的身高和體重是？'}
+        </h3>
+        """, unsafe_allow_html=True)
         
-        col1, col2 = st.columns([1, 1])
+        # Height with quick options plus slider
+        st.markdown(f"""
+        <p style="font-weight: 500; font-size: 18px; margin-bottom: 15px;">
+            {'Your height:' if lang == 'ENG' else '您的身高:'}
+        </p>
+        """, unsafe_allow_html=True)
         
-        with col1:
-            height = st.number_input(
-                "Height (cm)" if lang == "ENG" else "身高 (cm)", 
-                min_value=0, 
-                max_value=250, 
-                value=st.session_state.get('height', 0),
-                step=1,
-                format="%d",
-                key="height_large"
-            )
+        # Common height ranges as buttons
+        height_ranges = [
+            ("Under 160cm", "160cm以下"),
+            ("160-170cm", "160-170cm"),
+            ("170-180cm", "170-180cm"),
+            ("Over 180cm", "180cm以上")
+        ]
         
-        with col2:
-            weight = st.number_input(
-                "Weight (kg)" if lang == "ENG" else "體重 (kg)", 
-                min_value=0.0, 
-                max_value=500.0, 
-                value=float(st.session_state.get('weight', 0)),
-                step=0.1,
-                format="%.1f",
-                key="weight_large"
-            )
+        height_cols = st.columns(len(height_ranges))
+        for i, (height_eng, height_chi) in enumerate(height_ranges):
+            with height_cols[i]:
+                if st.button(
+                    height_eng if lang == "ENG" else height_chi,
+                    key=f"height_range_{i}",
+                    use_container_width=True
+                ):
+                    # Set initial height value based on selection
+                    height_values = [155, 165, 175, 185]
+                    st.session_state.height = height_values[i]
+                    st.session_state.show_height_slider = True
+                    st.rerun()
+        
+        # Height slider for precise adjustment
+        if 'show_height_slider' not in st.session_state:
+            st.session_state.show_height_slider = False
+            
+        if st.session_state.show_height_slider or st.session_state.get('height', 0) > 0:
+            st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
+            
+            # Determine slider range based on selection
+            if st.session_state.get('height', 0) <= 160:
+                min_height, max_height = 140, 160
+            elif st.session_state.get('height', 0) <= 170:
+                min_height, max_height = 160, 170
+            elif st.session_state.get('height', 0) <= 180:
+                min_height, max_height = 170, 180
+            else:
+                min_height, max_height = 180, 210
+                
+            # Center the display and make it larger
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                # Display current height in big digits
+                st.markdown(f"""
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size: 36px; font-weight: bold; color: #5D5CDE;">
+                        {st.session_state.get('height', 0)} cm
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Height slider
+                height = st.slider(
+                    "Height adjustment" if lang == "ENG" else "身高調整",
+                    min_value=min_height,
+                    max_value=max_height,
+                    value=st.session_state.get('height', min_height),
+                    step=1,
+                    label_visibility="collapsed",
+                    key="height_slider"
+                )
+                st.session_state.height = height
+                
+        # Divider
+        st.markdown("<hr style='margin: 30px 0;'>", unsafe_allow_html=True)
+        
+        # Weight with quick options plus slider
+        st.markdown(f"""
+        <p style="font-weight: 500; font-size: 18px; margin-bottom: 15px;">
+            {'Your weight:' if lang == 'ENG' else '您的體重:'}
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Common weight ranges as buttons
+        weight_ranges = [
+            ("Under 50kg", "50kg以下"),
+            ("50-65kg", "50-65kg"),
+            ("65-80kg", "65-80kg"),
+            ("Over 80kg", "80kg以上")
+        ]
+        
+        weight_cols = st.columns(len(weight_ranges))
+        for i, (weight_eng, weight_chi) in enumerate(weight_ranges):
+            with weight_cols[i]:
+                if st.button(
+                    weight_eng if lang == "ENG" else weight_chi,
+                    key=f"weight_range_{i}",
+                    use_container_width=True
+                ):
+                    # Set initial weight value based on selection
+                    weight_values = [45, 58, 72, 85]
+                    st.session_state.weight = weight_values[i]
+                    st.session_state.show_weight_slider = True
+                    st.rerun()
+        
+        # Weight slider for precise adjustment
+        if 'show_weight_slider' not in st.session_state:
+            st.session_state.show_weight_slider = False
+            
+        if st.session_state.show_weight_slider or st.session_state.get('weight', 0) > 0:
+            st.markdown("<div style='margin: 15px 0;'></div>", unsafe_allow_html=True)
+            
+            # Determine slider range based on selection
+            if st.session_state.get('weight', 0) < 50:
+                min_weight, max_weight = 30, 50
+            elif st.session_state.get('weight', 0) < 65:
+                min_weight, max_weight = 50, 65
+            elif st.session_state.get('weight', 0) < 80:
+                min_weight, max_weight = 65, 80
+            else:
+                min_weight, max_weight = 80, 150
+                
+            # Center the display and make it larger
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                # Display current weight in big digits
+                st.markdown(f"""
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div style="font-size: 36px; font-weight: bold; color: #5D5CDE;">
+                        {st.session_state.get('weight', 0)} kg
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Weight slider
+                weight = st.slider(
+                    "Weight adjustment" if lang == "ENG" else "體重調整",
+                    min_value=float(min_weight),
+                    max_value=float(max_weight),
+                    value=float(st.session_state.get('weight', min_weight)),
+                    step=0.5,
+                    label_visibility="collapsed",
+                    key="weight_slider"
+                )
+                st.session_state.weight = weight
         
         # Calculate BMI if we have height and weight
-        if height > 0 and weight > 0:
+        # For the BMI display section in Step 3, replace the existing code with this:
+
+        # Calculate BMI if we have height and weight
+        if st.session_state.get('height', 0) > 0 and st.session_state.get('weight', 0) > 0:
+            height = st.session_state.height
+            weight = st.session_state.weight
+            
             bmi = round(weight / ((height/100) ** 2), 1)
             
             # Determine BMI category and color
             if bmi < 18.5:
                 bmi_category = "Underweight" if lang == "ENG" else "體重過輕"
                 bmi_color = "#3498db"  # Blue
+                bmi_percentage = max(min(bmi / 18.5 * 50, 50), 10)  # Scale to 0-50% range
             elif bmi < 24:
                 bmi_category = "Normal" if lang == "ENG" else "正常"
                 bmi_color = "#2ecc71"  # Green
+                bmi_percentage = 50 + ((bmi - 18.5) / (24 - 18.5) * 20)  # Scale to 50-70% range
             elif bmi < 27:
                 bmi_category = "Overweight" if lang == "ENG" else "過重"
                 bmi_color = "#f39c12"  # Orange
+                bmi_percentage = 70 + ((bmi - 24) / (27 - 24) * 10)  # Scale to 70-80% range
             elif bmi < 30:
                 bmi_category = "Mild Obesity" if lang == "ENG" else "輕度肥胖"
                 bmi_color = "#e67e22"  # Dark Orange
+                bmi_percentage = 80 + ((bmi - 27) / (30 - 27) * 10)  # Scale to 80-90% range
             elif bmi < 35:
                 bmi_category = "Moderate Obesity" if lang == "ENG" else "中度肥胖"
                 bmi_color = "#e74c3c"  # Red
+                bmi_percentage = 90 + ((bmi - 30) / (35 - 30) * 5)  # Scale to 90-95% range
             else:
                 bmi_category = "Severe Obesity" if lang == "ENG" else "重度肥胖"
                 bmi_color = "#c0392b"  # Dark Red
+                bmi_percentage = 95 + min((bmi - 35) / 15 * 5, 5)  # Scale to 95-100% range, cap at 100%
             
-            # Display BMI
+            # Display enhanced BMI widget using separate components instead of complex HTML
+            st.markdown("<div style='margin: 30px 0;'></div>", unsafe_allow_html=True)
+            
+            # Container for BMI display
             st.markdown(f"""
-            <div style="background-color: #f8f9fa; border-radius: 10px; padding: 15px; margin: 15px 0; text-align: center;">
-                <div style="font-weight: bold; margin-bottom: 10px;">{'Your BMI' if lang == 'ENG' else '您的BMI'}</div>
-                <div style="font-size: 24px; font-weight: bold; color: {bmi_color};">{bmi}</div>
-                <div style="color: {bmi_color};">{bmi_category}</div>
+            <div style=" border-radius: 12px; padding: 20px; margin: 20px 0; text-align: left;">
+                <div style="font-weight: bold; margin-bottom: 15px; font-size: 20px; color: #333;">
+                    {'Your BMI' if lang == 'ENG' else '您的BMI:'}
+                </div>
             </div>
+            """, unsafe_allow_html=True)
+            
+            # Show BMI score as large text
+            st.markdown(f"<h1 style='text-align: center; color: {bmi_color}; font-size: 48px;'>{bmi}</h1>", unsafe_allow_html=True)
+            
+            # Show BMI category
+            st.markdown(f"<h3 style='text-align: center; color: {bmi_color}; margin-bottom: 20px;'>{bmi_category}</h3>", unsafe_allow_html=True)
+            
+            # Create a progress bar component
+            st.progress(bmi_percentage/100)
+            
+            # Show BMI scale labels
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.markdown("<div style='text-align: left; font-size: 14px; color: #666;'>Underweight</div>" if lang == "ENG" else "<div style='text-align: left; font-size: 14px; color: #666;'>體重過輕</div>", unsafe_allow_html=True)
+            with col2:
+                st.markdown("<div style='text-align: center; font-size: 14px; color: #666;'>Normal</div>" if lang == "ENG" else "<div style='text-align: center; font-size: 14px; color: #666;'>正常</div>", unsafe_allow_html=True)
+            with col3:
+                st.markdown("<div style='text-align: center; font-size: 14px; color: #666;'>Overweight</div>" if lang == "ENG" else "<div style='text-align: center; font-size: 14px; color: #666;'>過重</div>", unsafe_allow_html=True)
+            with col4:
+                st.markdown("<div style='text-align: right; font-size: 14px; color: #666;'>Obesity</div>" if lang == "ENG" else "<div style='text-align: right; font-size: 14px; color: #666;'>肥胖</div>", unsafe_allow_html=True)
+            
+            # Add TCM context
+            st.markdown(f"""
+            <br>
+            <div style="text-align: center; font-size: 16px; color: #666; margin-top: 15px;">
+                {'In TCM, your BMI helps determine your body constitution type.' if lang == 'ENG' else '在中醫中，BMI有助於確定您的體質類型。'}
+            </div><br><br>
             """, unsafe_allow_html=True)
         
         # Navigation buttons
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button(
-                "⬅️ Back" if lang == "ENG" else "⬅️ 返回", 
+                "⬅️ " + ("Back" if lang == "ENG" else "返回"), 
                 type="secondary",
                 use_container_width=True,
                 key="height_back"
@@ -283,8 +656,6 @@ def show_quick_start_personal_info():
                 use_container_width=True,
                 key="height_next"
             ):
-                st.session_state.height = height
-                st.session_state.weight = weight
                 st.session_state.personal_info_step = 4
                 st.rerun()
         
@@ -298,28 +669,96 @@ def show_quick_start_personal_info():
                 st.session_state.personal_info_step = 4
                 st.rerun()
     
+    # Step 4: Exercise frequency with visual selection
     elif st.session_state.personal_info_step == 4:
-        # Exercise frequency
-        st.markdown(f"### {'How many hours do you exercise weekly?' if lang == 'ENG' else '您每週運動多少小時？'}")
+        st.markdown(f"""
+        <h3 style="color: #5D5CDE; margin: 20px 0; font-size: 22px; text-align: center;">
+            {'How often do you exercise?' if lang == 'ENG' else '您多久運動一次？'}
+        </h3>
+        <p style="text-align: center; margin-bottom: 25px; font-size: 16px; color: #666;">
+            {'Tap on the option that best describes your exercise routine.' if lang == 'ENG' else '點選最符合您運動習慣的選項。'}
+        </p>
+        """, unsafe_allow_html=True)
         
-        exercise_frequency_options = ["0", "1-2", "3-4", "5-6", ">7"]
-        exercise_index = exercise_frequency_options.index(st.session_state.get('exercise_frequency', '0')) if st.session_state.get('exercise_frequency', '0') in exercise_frequency_options else 0
+        # Exercise options with icons and descriptions
+        exercise_options = [
+            {
+                "icon": "🛋️",
+                "title_eng": "Rarely exercise",
+                "title_chi": "很少運動",
+                "desc_eng": "Little to no physical activity",
+                "desc_chi": "很少或沒有體力活動",
+                "value": "0"
+            },
+            {
+                "icon": "🚶",
+                "title_eng": "Light exercise",
+                "title_chi": "輕度運動",
+                "desc_eng": "1-2 hours weekly (walking, etc.)",
+                "desc_chi": "每週1-2小時（散步等）",
+                "value": "1-2"
+            },
+            {
+                "icon": "🏊",
+                "title_eng": "Moderate exercise",
+                "title_chi": "中度運動",
+                "desc_eng": "3-4 hours weekly",
+                "desc_chi": "每週3-4小時",
+                "value": "3-4"
+            },
+            {
+                "icon": "🏃",
+                "title_eng": "Regular exercise",
+                "title_chi": "規律運動",
+                "desc_eng": "5-6 hours weekly",
+                "desc_chi": "每週5-6小時",
+                "value": "5-6"
+            },
+            {
+                "icon": "🏋️",
+                "title_eng": "Intensive exercise",
+                "title_chi": "強度運動",
+                "desc_eng": "7+ hours weekly",
+                "desc_chi": "每週7小時以上",
+                "value": ">7"
+            }
+        ]
         
-        # Use radio buttons for a more visual selection
-        exercise_frequency = st.radio(
-            "Exercise Hours (Weekly)" if lang == "ENG" else "運動時數（每週）",
-            exercise_frequency_options,
-            index=exercise_index,
-            horizontal=True,
-            label_visibility="collapsed",
-            key="exercise_large"
-        )
+        # Display each option as a clickable button
+        for i, option in enumerate(exercise_options):
+            # Check if this option is currently selected
+            is_selected = st.session_state.get('exercise_frequency', '') == option['value']
+            
+            # Set button style to primary if selected, otherwise secondary
+            button_type = "primary" if is_selected else "secondary"
+            
+            # Create a single button for each option
+            if st.button(
+                f"{option['icon']} {option['title_eng'] if lang == 'ENG' else option['title_chi']} - {option['desc_eng'] if lang == 'ENG' else option['desc_chi']}",
+                key=f"exercise_option_{i}",
+                type=button_type,
+                use_container_width=True
+            ):
+                st.session_state.exercise_frequency = option['value']
+                st.rerun()
+        
+        # TCM exercise tip
+        st.markdown(f"""
+        <div style="background-color: #f0f4fa; border-radius: 10px; padding: 15px; margin: 20px 0; border-left: 4px solid #5D5CDE;">
+            <div style="font-weight: 500; margin-bottom: 8px; color: #5D5CDE; font-size: 16px;">
+                {'TCM Tip' if lang == 'ENG' else '中醫小貼士'}
+            </div>
+            <div style="font-size: 14px; color: #333;">
+                {'In Traditional Chinese Medicine, moderate exercise helps balance qi flow and supports overall wellness.' if lang == 'ENG' else '在中醫學中，適度運動有助於平衡氣流並支持整體健康。'}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Navigation buttons
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button(
-                "⬅️ Back" if lang == "ENG" else "⬅️ 返回", 
+                "⬅️ " + ("Back" if lang == "ENG" else "返回"), 
                 type="secondary",
                 use_container_width=True,
                 key="exercise_back"
@@ -334,7 +773,6 @@ def show_quick_start_personal_info():
                 use_container_width=True,
                 key="exercise_next"
             ):
-                st.session_state.exercise_frequency = exercise_frequency
                 st.session_state.personal_info_step = 5
                 st.rerun()
         
@@ -348,24 +786,125 @@ def show_quick_start_personal_info():
                 st.session_state.personal_info_step = 5
                 st.rerun()
     
+    # Step 5: Health history with improved button-based selection
     elif st.session_state.personal_info_step == 5:
-        # Health history
-        st.markdown(f"### {'Do you have any existing health conditions?' if lang == 'ENG' else '您是否有任何現有的健康狀況？'}")
+        st.markdown(f"""
+        <h3 style="color: #5D5CDE; margin: 20px 0; font-size: 22px; text-align: center;">
+            {'Do you have any health conditions?' if lang == 'ENG' else '您是否有任何健康狀況？'}
+        </h3>
+        <p style="text-align: center; margin-bottom: 25px; font-size: 16px; color: #666;">
+            {'Tap on all conditions that apply to you.' if lang == 'ENG' else '點選所有適用於您的情況。'}
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Initialize selected conditions if needed
+        if 'selected_conditions' not in st.session_state:
+            st.session_state.selected_conditions = []
+        
+        # Common health conditions with icons
+        conditions = [
+            {"icon": "❤️", "name_eng": "Blood Pressure Issues", "name_chi": "血壓問題"},
+            {"icon": "🍬", "name_eng": "Diabetes", "name_chi": "糖尿病"},
+            {"icon": "🤧", "name_eng": "Allergies", "name_chi": "過敏"},
+            {"icon": "😴", "name_eng": "Sleep Issues", "name_chi": "睡眠問題"},
+            {"icon": "🍽️", "name_eng": "Digestive Issues", "name_chi": "消化問題"},
+            {"icon": "🦴", "name_eng": "Joint Pain", "name_chi": "關節疼痛"},
+            {"icon": "🧠", "name_eng": "Headaches", "name_chi": "頭痛"},
+            {"icon": "😰", "name_eng": "Stress/Anxiety", "name_chi": "壓力/焦慮"},
+            {"icon": "🫁", "name_eng": "Respiratory Issues", "name_chi": "呼吸問題"},
+            {"icon": "⚡", "name_eng": "Fatigue", "name_chi": "疲勞"},
+            {"icon": "🔄", "name_eng": "Menstrual Issues", "name_chi": "月經問題"},
+            {"icon": "🌡️", "name_eng": "Body Temperature Issues", "name_chi": "體溫問題"}
+        ]
+        
+        # Arrange conditions in a grid with Streamlit columns
+        num_cols = 2
+        rows = [conditions[i:i+num_cols] for i in range(0, len(conditions), num_cols)]
+        
+        for row in rows:
+            cols = st.columns(num_cols)
+            for i, condition in enumerate(row):
+                condition_name = condition["name_eng"] if lang == "ENG" else condition["name_chi"]
+                
+                # Check if this condition is already selected
+                is_selected = condition_name in st.session_state.selected_conditions
+                
+                # Set button style based on selection state
+                button_type = "primary" if is_selected else "secondary"
+                display_text = f"{condition['icon']} {condition_name}"
+                
+                with cols[i]:
+                    if st.button(
+                        display_text,
+                        key=f"condition_{condition_name}",
+                        type=button_type,
+                        use_container_width=True
+                    ):
+                        # Toggle selection
+                        if condition_name in st.session_state.selected_conditions:
+                            st.session_state.selected_conditions.remove(condition_name)
+                        else:
+                            st.session_state.selected_conditions.append(condition_name)
+                        st.rerun()
+        
+        # Display selection summary if any conditions are selected
+        if st.session_state.selected_conditions:
+            st.markdown("<div style='margin: 20px 0;'></div>", unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <div style="background-color: rgba(93, 92, 222, 0.1); border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                <div style="font-weight: 500; margin-bottom: 10px; color: #5D5CDE; font-size: 16px;">
+                    {'Selected conditions:' if lang == 'ENG' else '已選擇的狀況:'}
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            """, unsafe_allow_html=True)
+            
+            for condition in st.session_state.selected_conditions:
+                st.markdown(f"""
+                    <div style="background-color: #5D5CDE; color: white; border-radius: 20px; padding: 5px 12px; font-size: 14px;">
+                        {condition}
+                    </div>
+                    <br>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("</div></div>", unsafe_allow_html=True)
+        
+        # Option to add other conditions
+        st.markdown(f"""
+        <p style="font-weight: 500; margin: 25px 0 15px 0; font-size: 16px;">
+            {'Any other health conditions or medications?' if lang == 'ENG' else '任何其他健康狀況或藥物？'}
+        </p>
+        """, unsafe_allow_html=True)
+        
+        # Default text includes already selected conditions
+        default_text = st.session_state.get('health_history', '')
+        if not default_text and st.session_state.selected_conditions:
+            default_text = ", ".join(st.session_state.selected_conditions)
         
         health_history = st.text_area(
-            "Any health conditions or medications?" if lang == "ENG" else "任何健康狀況或藥物？", 
-            value=st.session_state.get('health_history', ''),
-            placeholder="List any existing health conditions, allergies, or medications..." if lang == "ENG" else "列出任何現有的健康狀況，過敏或藥物...",
-            height=150,
+            "Additional health information" if lang == "ENG" else "其他健康信息", 
+            value=default_text,
+            placeholder="List any additional health conditions, allergies, or medications..." if lang == "ENG" else "列出任何其他健康狀況，過敏或藥物...",
+            height=100,
             label_visibility="collapsed",
             key="health_history_large"
         )
+        
+        # Data privacy note with large, reassuring icon
+        st.markdown(f"""
+        <div style="background-color: #f8f9fa; border-radius: 8px; padding: 15px; margin-top: 20px; font-size: 14px; color: #666; display: flex; align-items: center;">
+            <div style="font-size: 32px; margin-right: 15px;">🔒</div>
+            <div>
+                {'Your health information is kept private and is only used to provide personalized TCM recommendations.' if lang == 'ENG' else '您的健康信息保持私密，僅用於提供個性化的中醫建議。'}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
         # Navigation buttons
         col1, col2 = st.columns([1, 1])
         with col1:
             if st.button(
-                "⬅️ Back" if lang == "ENG" else "⬅️ 返回", 
+                "⬅️ " + ("Back" if lang == "ENG" else "返回"), 
                 type="secondary",
                 use_container_width=True,
                 key="history_back"
@@ -380,6 +919,15 @@ def show_quick_start_personal_info():
                 use_container_width=True,
                 key="history_complete"
             ):
+                # Include selected conditions in health history
+                if st.session_state.selected_conditions and not health_history:
+                    health_history = ", ".join(st.session_state.selected_conditions)
+                elif st.session_state.selected_conditions and health_history:
+                    # Add selected conditions if they're not already mentioned
+                    for condition in st.session_state.selected_conditions:
+                        if condition not in health_history:
+                            health_history = condition + ", " + health_history
+                
                 st.session_state.health_history = health_history
                 st.session_state.personal_data_complete = True
                 st.session_state.quick_start_step = 2
