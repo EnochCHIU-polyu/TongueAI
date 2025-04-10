@@ -1782,10 +1782,11 @@ def show_quick_start_complete():
         
         # Tongue analysis summary
         score = st.session_state.get('tongue_analysis_score', 'N/A')
-        if score != 'N/A':
-            score_color = "#2ecc71" if score >= 80 else "#f39c12" if score >= 60 else "#e74c3c"
-        else:
+        if score == 'N/A':
             score_color = "#666"
+        else:
+            score_color = "#2ecc71" if score >= 80 else "#f39c12" if score >= 60 else "#e74c3c"
+            
 
         st.markdown(f"""
         <div style="border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border: 1px solid #eaeaea;">
