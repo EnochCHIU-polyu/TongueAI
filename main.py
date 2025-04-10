@@ -447,6 +447,9 @@ page = st.session_state.page
 # Main content area
 with st.container():
     if page == "main":
+        #scroll to the top
+        st.markdown("<style>body {scroll-behavior: smooth;}</style>", unsafe_allow_html=True)
+        st.markdown("<script>window.scrollTo(0, 0);</script>", unsafe_allow_html=True)
         show_main()
     elif page == "Personal Info":
         show_personal_info()
