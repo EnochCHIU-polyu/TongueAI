@@ -1900,7 +1900,6 @@ def show_quick_start_complete():
             type="secondary",
             use_container_width=True
         ):
-            st.session_state.page = "Quick Start"
             st.session_state.quick_start_step = 1
             st.session_state.personal_info_step = 1
             st.rerun()
