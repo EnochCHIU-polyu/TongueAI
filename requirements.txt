@@ -4,3 +4,6 @@ streamlit
 openai
 markdown
 matplotlib
+opencv-python
+opencv-python-headless
+cv2
