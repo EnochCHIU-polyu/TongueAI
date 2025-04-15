@@ -63,22 +63,23 @@ def local_css():
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             border: 1px solid #eaeaea;
+            cursor: pointer;
         }
         
         .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: #5D5CDE;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
         }
         
         .feature-title {
             font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
         }
         
         .feature-description {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
         }
         
         /* Language selector */
@@ -171,20 +172,57 @@ def local_css():
             margin: 20px 0;
             padding: 15px;
             border-radius: 10px;
-            background-color: #f0f7ff;
             border: 2px solid #5D5CDE;
             text-align: center;
             transition: all 0.3s ease;
         }
         
         .quick-start-button:hover {
-            background-color: #e0eeff;
             transform: translateY(-2px);
             box-shadow: 0 6px 12px rgba(93, 92, 222, 0.1);
         }
+        
+        /* Feature grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 992px) {
+            .feature-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Sidebar submenu */
+        .sidebar-submenu {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: rgba(93, 92, 222, 0.05);
+        }
+        
+        /* Footer */
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #777;
+            text-align: center;
+        }
     </style>
     """, unsafe_allow_html=True)
-
+    
 # Initialize session state
 if 'page' not in st.session_state:
     st.session_state.page = "main"
