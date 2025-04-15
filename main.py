@@ -8,6 +8,7 @@ from tongue_detect import show_tongue_detect
 from Weather import show_weather
 from recommendation import show_recommendation
 from herb_check import show_herb
+from herb_inventory import show_herb_inventory
 import streamlit as st
 import base64
 from quick_start import show_quick_start  # Import the quick start module
@@ -435,6 +436,11 @@ def show_sidebar():
             "ENG": "Herb Database",
             "中文": "藥材查詢",
             "icon": "🌿"
+        },
+        "Herb Inventory": {
+            "ENG": "Herb Inventory",
+            "中文": "藥材庫存",
+            "icon": "🧪"
         }
     }
     
@@ -442,6 +448,46 @@ def show_sidebar():
     for page_key, page_info in nav_items.items():
         nav_button(page_info, page_info["icon"], page_key, st.session_state.language)
     
+    # Add herb inventory submenu if on the herb inventory page
+    if st.session_state.page == "Herb Inventory":
+        lang = st.session_state.language
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 🔹 " + ("Herb Inventory Menu" if lang == "ENG" else "藥材庫存菜單"))
+        
+        # Define menu options based on language
+        menu_options = {
+            "ENG": [
+                "🌿 Add New Herb",
+                "🔍 Search Herbs",
+                "📦 Manage Inventory",
+                "📊 Inventory Report",
+                "📤 Export/Import Data"
+            ],
+            "中文": [
+                "🌿 添加新藥材",
+                "🔍 搜索藥材",
+                "📦 管理庫存",
+                "📊 庫存報告",
+                "📤 導出/導入數據"
+            ]
+        }
+        
+        # Store the selected herb menu option in session state if not already present
+        if 'herb_inventory_menu' not in st.session_state:
+            st.session_state.herb_inventory_menu = menu_options[lang][0] if lang in menu_options else menu_options["ENG"][0]
+        
+        # Create the radio buttons for herb inventory submenu
+        herb_menu = st.sidebar.radio(
+            "", 
+            menu_options[lang if lang in menu_options else "ENG"],
+            key="herb_inventory_submenu"
+        )
+        
+        # Update session state when menu changes
+        if herb_menu != st.session_state.herb_inventory_menu:
+            st.session_state.herb_inventory_menu = herb_menu
+            st.rerun()
+
     # Footer
     st.sidebar.markdown("---")
     st.sidebar.caption("© 2024 AI TCM Assistant")
@@ -489,3 +535,5 @@ with st.container():
         show_herb(client, model_name)
     elif page == "quick_start":
         show_quick_start(client, model_name)
+    elif page == "Herb Inventory":
+        show_herb_inventory()
