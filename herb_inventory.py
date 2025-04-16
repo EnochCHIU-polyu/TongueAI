@@ -573,7 +573,7 @@ def show_herb_inventory(client, model_name):
                     st.success(("Herb recognized!" if lang == "ENG" else "藥材已識別！"))
                     
                     st.markdown(f"""
-                    <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 15px 0; background-color: #f8f9fa;">
+                    <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 15px 0;">
                         <h3 style="margin-top: 0; color: #5D5CDE;">{result.get('herb_name', 'Unknown')} ({result.get('chinese_name', '未知')})</h3>
                         <p><strong>{"Category" if lang == "ENG" else "類別"}:</strong> {result.get('category', 'Unknown')}</p>
                         <p><strong>{"Notes" if lang == "ENG" else "備註"}:</strong> {result.get('notes', '')}</p>
@@ -1022,7 +1022,7 @@ def show_herb_inventory(client, model_name):
                 
                 # Display current stock information
                 st.markdown(f"""
-                <div style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; margin-bottom: 20px;">
+                <div style="padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h4 style="margin-top: 0;">{name} ({chinese_name})</h4>
                     <p><strong>{"Current Stock" if lang == "ENG" else "當前庫存"}:</strong> {stock_amount} {unit}</p>
                     <p><strong>{"Location" if lang == "ENG" else "位置"}:</strong> {storage_location}</p>
@@ -1058,7 +1058,7 @@ def show_herb_inventory(client, model_name):
                 
                 # Display new stock level
                 st.markdown(f"""
-                <div style="padding: 15px; background-color: #e8f4fd; border-radius: 10px; margin: 20px 0;">
+                <div style="padding: 15px; border-radius: 10px; margin: 20px 0;">
                     <p style="margin: 0;"><strong>{"New Stock Level" if lang == "ENG" else "新庫存水平"}:</strong> {new_stock_level} {unit}</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -1100,7 +1100,7 @@ def show_herb_inventory(client, model_name):
                 
                 # Show herb details
                 st.markdown(f"""
-                <div style="padding: 15px; background-color: #f8f9fa; border-radius: 10px; margin-bottom: 20px;">
+                <div style="padding: 15px; border-radius: 10px; margin-bottom: 20px;">
                     <h4 style="margin-top: 0;">{name} ({chinese_name})</h4>
                     <p><strong>{"Category" if lang == "ENG" else "類別"}:</strong> {category}</p>
                     <p><strong>{"Stock" if lang == "ENG" else "庫存"}:</strong> {stock_amount} {unit}</p>
