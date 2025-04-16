@@ -1,6 +1,7 @@
 # herb_inventory.py
 
 import streamlit as st
+import cv2
 import sqlite3
 import pandas as pd
 import os
@@ -12,6 +13,17 @@ import base64
 import time
 from PIL import Image
 import numpy as np
+
+from azure.ai.inference import ChatCompletionsClient
+from azure.ai.inference.models import (
+    SystemMessage,
+    UserMessage,
+    TextContentItem,
+    ImageContentItem,
+    ImageUrl,
+    ImageDetailLevel,
+)
+from azure.core.credentials import AzureKeyCredential
 
 # Database connection and initialization
 def connect_db():
@@ -380,8 +392,9 @@ def show_herb_detail_card(herb):
         if notes:
             st.markdown(f"**Notes:**  \n{notes}")
 
-# Main Streamlit UI
-def show_herb_inventory():
+# Modified Add New Herb section with integrated AI recognition and manual entry
+
+def show_herb_inventory(client, model_name):
     lang = st.session_state.language  # Get current language
 
     # Set page title based on language
@@ -390,114 +403,419 @@ def show_herb_inventory():
     # Initialize session state for herb management
     if 'selected_herb_name' not in st.session_state:
         st.session_state.selected_herb_name = None
-    
+    if 'selected_storage' not in st.session_state:
+        st.session_state.selected_storage = None
+    if 'herb_image' not in st.session_state:
+        st.session_state.herb_image = None
+    if 'herb_ai_result' not in st.session_state:
+        st.session_state.herb_ai_result = None
+    if 'ai_loading' not in st.session_state:
+        st.session_state.ai_loading = False
+    if 'has_confirmed_ai_result' not in st.session_state:
+        st.session_state.has_confirmed_ai_result = False
+        
     st.markdown(f"<h1 style='color: #5D5CDE;'>{page_title}</h1>", unsafe_allow_html=True)
     
-    # Get the selected selected_menu option from session state
+    # Get the selected menu option from session state
     selected_menu = st.session_state.herb_inventory_menu
     
-    # Add New Herb section
+    # Add New Herb section with integrated AI Recognition
     if selected_menu == "🌿 Add New Herb" or selected_menu == "🌿 添加新藥材":
-        # Add New Herb content here
         st.subheader("🌿 " + ("Add New Herb to Inventory" if lang == "ENG" else "添加新藥材到庫存"))
-        # Rest of the Add New Herb section...
-
-        # Image upload and OCR
-        uploaded_file = st.file_uploader(
-            "📸 " + ("Upload herb image (optional)" if lang == "ENG" else "上傳藥材圖片（可選）"), 
-            type=["jpg", "png", "jpeg"]
-        )
         
-        herb_name = ""
-        chinese_name = ""
-        
-        if uploaded_file:
-            # Display uploaded image
-            st.image(uploaded_file, caption=("Uploaded Image" if lang == "ENG" else "已上傳圖片"), width=300)
+        # Create a container with border for AI Recognition
+        with st.container(border=True):
+            st.markdown(f"### 🔍 {('AI Recognition' if lang == 'ENG' else 'AI識別')}")
+            st.markdown(("Use your camera to scan herbs and let AI identify them" if lang == "ENG" else "使用您的相機掃描藥材，讓AI識別它們"))
             
-            # OCR scanning option
-            if st.button("🔍 " + ("Scan Label for Text" if lang == "ENG" else "掃描標籤文本")):
-                # Save temp file for OCR
-                img_path = "temp_label.jpg"
-                with open(img_path, "wb") as f:
-                    f.write(uploaded_file.getbuffer())
+            # Camera input
+            camera_image = st.camera_input(
+                "Take a photo of herbs" if lang == "ENG" else "拍攝藥材照片",
+                help="Position the herbs clearly in the frame" if lang == "ENG" else "請將藥材清晰地放在框架中"
+            )
+            
+            # Alternative file upload
+            st.markdown("**OR**")
+            uploaded_file = st.file_uploader(
+                "Upload herb image" if lang == "ENG" else "上傳藥材圖片",
+                type=["jpg", "jpeg", "png"]
+            )
+            
+            # Use either camera image or uploaded file
+            if camera_image is not None:
+                st.session_state.herb_image = camera_image
+            elif uploaded_file is not None:
+                st.session_state.herb_image = uploaded_file
+            
+            # Analyze and Clear buttons - positioned below both inputs
+            if st.session_state.herb_image and not st.session_state.ai_loading:
+                analyze_col, clear_col = st.columns(2)
                 
-                # Perform OCR
-                with st.spinner("Scanning..."):
-                    ocr_result = scan_herb_label(img_path)
+                with analyze_col:
+                    if st.button("🔍 " + ("Analyze Herb" if lang == "ENG" else "分析藥材"), 
+                               key="analyze_herb_button",
+                               type="primary",
+                               use_container_width=True):
+                        st.session_state.ai_loading = True
+                        st.session_state.has_confirmed_ai_result = False
+                        
+                        # Save the image to a temp file for analysis
+                        temp_image_path = "herb_temp_image.jpg"
+                        with open(temp_image_path, "wb") as f:
+                            f.write(st.session_state.herb_image.getbuffer())
+                        
+                        # Define AI prompts based on language
+                        if lang == "ENG":
+                            user_prompt = ("Analyze this herb image and return the following information in JSON format: "
+                                         "herb name in English, Chinese name, category (Traditional Chinese Medicine, "
+                                         "Western Medicine, or Health Products), and a brief note about its properties and uses.")
+                            system_prompt = (
+                                "You are an expert in traditional Chinese medicine herb identification. "
+                                "Analyze the herb image and provide ONLY the following information in JSON format:\n"
+                                "{\n"
+                                "  \"herb_name\": \"[English name of the herb]\",\n"
+                                "  \"chinese_name\": \"[Chinese characters for the herb]\",\n"
+                                "  \"category\": \"[one of: Traditional Chinese Medicine, Western Medicine, Health Products]\",\n"
+                                "  \"notes\": \"[brief description of herb properties and uses]\"\n"
+                                "}\n\n"
+                                "Do not include any explanatory text outside the JSON structure."
+                            )
+                        else:
+                            user_prompt = ("分析這個藥材圖片，並以JSON格式返回以下信息："
+                                         "英文藥材名稱，中文名稱，類別（中藥、西藥或保健品），以及關於其性質和用途的簡短說明。")
+                            system_prompt = (
+                                "您是中藥材識別專家。分析藥材圖片，僅提供以下JSON格式的信息：\n"
+                                "{\n"
+                                "  \"herb_name\": \"[藥材的英文名稱]\",\n"
+                                "  \"chinese_name\": \"[藥材的中文字符]\",\n"
+                                "  \"category\": \"[選擇其一: 中藥, 西藥, 保健品]\",\n"
+                                "  \"notes\": \"[藥材性質和用途的簡短描述]\"\n"
+                                "}\n\n"
+                                "請不要在JSON結構外包含任何解釋性文本。"
+                            )
+                        
+                        # Placeholder for Azure AI API call
+                        try:
+                            response = client.complete(
+                                messages=[
+                                    SystemMessage(content=system_prompt),
+                                    UserMessage(
+                                        content=[
+                                            TextContentItem(text=user_prompt),
+                                            ImageContentItem(
+                                                image_url=ImageUrl.load(
+                                                    image_file=temp_image_path,
+                                                    image_format="jpg",
+                                                    detail=ImageDetailLevel.LOW)
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                                model=model_name,
+                            )
+                            
+                            # Extract result
+                            result = response.choices[0].message.content
+                            
+                            # Clean up any extra text and parse JSON
+                            import json
+                            import re
+                            
+                            # Try to extract JSON portion
+                            json_pattern = r'\{[\s\S]*\}'
+                            json_match = re.search(json_pattern, result)
+                            
+                            if json_match:
+                                json_str = json_match.group(0)
+                                try:
+                                    herb_data = json.loads(json_str)
+                                    st.session_state.herb_ai_result = herb_data
+                                except json.JSONDecodeError:
+                                    st.session_state.herb_ai_result = {
+                                        "error": "Could not parse JSON result",
+                                        "raw_result": result
+                                    }
+                            else:
+                                st.session_state.herb_ai_result = {
+                                    "error": "No JSON found in response",
+                                    "raw_result": result
+                                }
+           
+                        except Exception as e:
+                            st.session_state.herb_ai_result = {"error": str(e)}
+                        
+                        # Turn off loading state
+                        st.session_state.ai_loading = False
+                        st.rerun()
                 
-                if ocr_result:
-                    # Try to separate English and Chinese names
-                    parts = ocr_result.split(' ', 1)
-                    if len(parts) > 1 and '(' in ocr_result and ')' in ocr_result:
-                        herb_name = parts[0]
-                        chinese_name = parts[1].strip('()')
-                    else:
-                        herb_name = ocr_result
-                    
-                    st.success(f"🔍 " + ("Recognition Result:" if lang == "ENG" else "識別結果：") + f" `{ocr_result}`")
+                with clear_col:
+                    if st.button("🗑️ " + ("Clear Image" if lang == "ENG" else "清除圖片"), 
+                               key="clear_image",
+                               use_container_width=True):
+                        st.session_state.herb_image = None
+                        st.session_state.herb_ai_result = None
+                        st.session_state.has_confirmed_ai_result = False
+                        st.rerun()
+            
+            # Display AI results or loading indicator
+            if st.session_state.ai_loading:
+                st.spinner(("Analyzing herb..." if lang == "ENG" else "分析藥材中..."))
+            
+            elif st.session_state.herb_ai_result:
+                result = st.session_state.herb_ai_result
+                
+                if "error" in result:
+                    st.error(f"Error: {result['error']}")
+                    if "raw_result" in result:
+                        with st.expander("Show raw response"):
+                            st.text(result["raw_result"])
                 else:
-                    st.warning("⚠️ " + ("Recognition failed. Please enter manually." if lang == "ENG" else "識別失敗。請手動輸入。"))
+                    # Display the recognized herb information in a styled card
+                    st.success(("Herb recognized!" if lang == "ENG" else "藥材已識別！"))
+                    
+                    st.markdown(f"""
+                    <div style="border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin: 15px 0; background-color: #f8f9fa;">
+                        <h3 style="margin-top: 0; color: #5D5CDE;">{result.get('herb_name', 'Unknown')} ({result.get('chinese_name', '未知')})</h3>
+                        <p><strong>{"Category" if lang == "ENG" else "類別"}:</strong> {result.get('category', 'Unknown')}</p>
+                        <p><strong>{"Notes" if lang == "ENG" else "備註"}:</strong> {result.get('notes', '')}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Confirm button to use in form
+                    confirm_col = st.columns(1)[0]
+                    with confirm_col:
+                        confirm_text = "✅ Confirm & Use in Form" if lang == "ENG" else "✅ 確認並使用"
+                        if st.button(confirm_text, key="confirm_ai_result", type="primary", use_container_width=True):
+                            st.session_state.has_confirmed_ai_result = True
+                            st.info(("Information confirmed! Scroll down to complete the form." if lang == "ENG" else "信息已確認！請向下滾動完成表單。"))
+                            # We leave the herb_ai_result in session_state so it can be used by the form
         
-        # Form for herb details
-        with st.form("herb_form"):
+        # Add some spacing
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Manual Entry Section heading with icon
+        st.markdown(f"### 📝 {('Manual Entry' if lang == 'ENG' else '手動輸入')}")
+        
+        # Storage location selector
+        st.markdown("#### " + ("Select Storage Location" if lang == "ENG" else "選擇存儲位置"))
+        
+        # Create a 3x3 grid of large location buttons with fixed height for consistency
+        btn_style = """
+        <style>
+            .storage-button {
+                height: 70px;
+                font-size: 20px !important;
+                font-weight: bold !important;
+            }
+        </style>
+        """
+        st.markdown(btn_style, unsafe_allow_html=True)
+        
+        # Create a 3x3 grid of location buttons
+        col1, col2, col3 = st.columns(3)
+        
+        # Row 1
+        with col1:
+            btn_a1_type = "primary" if st.session_state.selected_storage == "A1" else "secondary"
+            if st.button("A1", key="loc_A1", use_container_width=True, type=btn_a1_type, 
+                       help="Storage location A1"):
+                st.session_state.selected_storage = "A1"
+                st.rerun()
+        
+        with col2:
+            btn_a2_type = "primary" if st.session_state.selected_storage == "A2" else "secondary"
+            if st.button("A2", key="loc_A2", use_container_width=True, type=btn_a2_type,
+                       help="Storage location A2"):
+                st.session_state.selected_storage = "A2"
+                st.rerun()
+        
+        with col3:
+            btn_a3_type = "primary" if st.session_state.selected_storage == "A3" else "secondary"
+            if st.button("A3", key="loc_A3", use_container_width=True, type=btn_a3_type,
+                       help="Storage location A3"):
+                st.session_state.selected_storage = "A3"
+                st.rerun()
+        
+        # Row 2
+        with col1:
+            btn_b1_type = "primary" if st.session_state.selected_storage == "B1" else "secondary"
+            if st.button("B1", key="loc_B1", use_container_width=True, type=btn_b1_type,
+                       help="Storage location B1"):
+                st.session_state.selected_storage = "B1"
+                st.rerun()
+        
+        with col2:
+            btn_b2_type = "primary" if st.session_state.selected_storage == "B2" else "secondary"
+            if st.button("B2", key="loc_B2", use_container_width=True, type=btn_b2_type,
+                       help="Storage location B2"):
+                st.session_state.selected_storage = "B2"
+                st.rerun()
+        
+        with col3:
+            btn_b3_type = "primary" if st.session_state.selected_storage == "B3" else "secondary"
+            if st.button("B3", key="loc_B3", use_container_width=True, type=btn_b3_type,
+                       help="Storage location B3"):
+                st.session_state.selected_storage = "B3"
+                st.rerun()
+        
+        # Row 3
+        with col1:
+            btn_c1_type = "primary" if st.session_state.selected_storage == "C1" else "secondary"
+            if st.button("C1", key="loc_C1", use_container_width=True, type=btn_c1_type,
+                       help="Storage location C1"):
+                st.session_state.selected_storage = "C1"
+                st.rerun()
+        
+        with col2:
+            btn_c2_type = "primary" if st.session_state.selected_storage == "C2" else "secondary"
+            if st.button("C2", key="loc_C2", use_container_width=True, type=btn_c2_type,
+                       help="Storage location C2"):
+                st.session_state.selected_storage = "C2"
+                st.rerun()
+        
+        with col3:
+            btn_c3_type = "primary" if st.session_state.selected_storage == "C3" else "secondary"
+            if st.button("C3", key="loc_C3", use_container_width=True, type=btn_c3_type,
+                       help="Storage location C3"):
+                st.session_state.selected_storage = "C3"
+                st.rerun()
+        
+        # Show the currently selected location
+        if st.session_state.selected_storage:
+            st.success(f"Selected location: {st.session_state.selected_storage}")
+        else:
+            st.warning(("Please select a storage location" if lang == "ENG" else "請選擇存儲位置"))
+        
+        # Get default values from AI result if user has confirmed it
+        default_herb_name = ""
+        default_chinese_name = ""
+        default_category = 0  # Index for default selection
+        default_notes = ""
+        
+        if st.session_state.has_confirmed_ai_result and st.session_state.herb_ai_result and "error" not in st.session_state.herb_ai_result:
+            result = st.session_state.herb_ai_result
+            default_herb_name = result.get('herb_name', '')
+            default_chinese_name = result.get('chinese_name', '')
+            
+            # Set category index based on AI result
+            simple_categories = [
+                "Traditional Chinese Medicine", 
+                "Western Medicine", 
+                "Health Products"
+            ]
+            if lang != "ENG":
+                simple_categories = ["中藥", "西藥", "保健品"]
+            
+            ai_category = result.get('category', '')
+            if ai_category in simple_categories:
+                default_category = simple_categories.index(ai_category)
+            
+            default_notes = result.get('notes', '')
+        
+        # Main form with simplified fields
+        with st.form("simple_herb_form"):
+            # Two columns for basic info
             col1, col2 = st.columns(2)
             
             with col1:
-                name = st.text_input(("Herb Name (English)" if lang == "ENG" else "藥材名稱（英文）"), value=herb_name)
-                chinese_name = st.text_input(("Chinese Name" if lang == "ENG" else "中文名稱"), value=chinese_name)
+                name = st.text_input(
+                    ("Herb Name (English)" if lang == "ENG" else "藥材名稱（英文）"),
+                    value=default_herb_name
+                )
                 
-                # Category dropdown
-                categories = get_category_options()
-                category = st.selectbox(("Category" if lang == "ENG" else "類別"), categories)
+                # Simplified category options
+                simple_categories = [
+                    "Traditional Chinese Medicine", 
+                    "Western Medicine", 
+                    "Health Products"
+                ]
+                if lang != "ENG":
+                    simple_categories = ["中藥", "西藥", "保健品"]
+                    
+                category = st.selectbox(
+                    ("Category" if lang == "ENG" else "類別"), 
+                    simple_categories,
+                    index=default_category
+                )
                 
-                # Properties multiselect
-                properties_options = get_herb_properties_options()
-                nature = st.selectbox(("Nature" if lang == "ENG" else "性質"), [""] + properties_options["Nature"])
-                flavor = st.multiselect(("Flavor" if lang == "ENG" else "味道"), properties_options["Flavor"])
-                
-                # Combine properties
-                properties = f"{nature}, {', '.join(flavor)}" if flavor else nature
-            
             with col2:
-                # Meridians multiselect
-                meridian_options = get_meridian_options()
-                meridians = st.multiselect(("Meridians" if lang == "ENG" else "歸經"), meridian_options)
-                meridians_text = ", ".join(meridians)
-                
-                # Stock amount and unit
-                stock_col1, stock_col2 = st.columns([2, 1])
-                with stock_col1:
-                    stock_amount = st.number_input(("Stock Amount" if lang == "ENG" else "庫存量"), min_value=0.0, step=0.1)
-                with stock_col2:
-                    unit = st.selectbox(("Unit" if lang == "ENG" else "單位"), ["g", "ml", "pieces", "packets"])
-                
-                # Storage location
-                location_options = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3", "D1", "D2", "D3"]
-                storage_location = st.selectbox(("Storage Location" if lang == "ENG" else "存儲位置"), location_options)
-                
-                # Expiry date
-                expiry_date = st.date_input(("Expiry Date" if lang == "ENG" else "有效期"))
+                chinese_name = st.text_input(
+                    ("Chinese Name" if lang == "ENG" else "中文名稱"),
+                    value=default_chinese_name
+                )
+                expiry_date = st.date_input(
+                    ("Expiry Date" if lang == "ENG" else "有效期"), 
+                    min_value=datetime.now().date()
+                )
             
-            # Notes field
-            notes = st.text_area(("Notes" if lang == "ENG" else "備註"), height=100)
+            # Stock amount field
+            stock_amount = st.number_input(
+                ("Stock Amount" if lang == "ENG" else "庫存量"), 
+                min_value=0.0, 
+                step=0.1, 
+                value=0.0
+            )
+            
+            # Notes field with default from AI if available
+            notes = st.text_area(
+                ("Notes (optional)" if lang == "ENG" else "備註（可選）"), 
+                value=default_notes,
+                height=80
+            )
+            
+            # Display the selected location inside the form (read-only)
+            storage_location = st.session_state.selected_storage
+            st.markdown(f"**Storage location:** {storage_location if storage_location else '(None selected)'}")
             
             # Submit button
-            submit_button = st.form_submit_button(("✅ Add Herb to Inventory" if lang == "ENG" else "✅ 添加藥材到庫存"))
+            submit_button = st.form_submit_button(
+                ("✅ Add Herb to Inventory" if lang == "ENG" else "✅ 添加藥材到庫存"), 
+                use_container_width=True
+            )
             
             if submit_button:
-                if name.strip():
-                    # Save the uploaded image if available
-                    image_path = save_uploaded_image(uploaded_file) if uploaded_file else None
+                if not name.strip():
+                    st.warning("⚠️ " + ("Herb name cannot be empty." if lang == "ENG" else "藥材名稱不能為空。"))
+                elif not storage_location:
+                    st.warning("⚠️ " + ("Please select a storage location." if lang == "ENG" else "請選擇存儲位置。"))
+                else:
+                    # Simplified properties and meridians
+                    properties = "Neutral" if lang == "ENG" else "平"
+                    meridians = ""
+                    unit = "g"
                     
                     # Store herb in database
                     store_herb(
-                        name, chinese_name, category, properties, meridians_text, 
-                        stock_amount, unit, storage_location, expiry_date, notes, image_path
+                        name, 
+                        chinese_name, 
+                        category, 
+                        properties, 
+                        meridians, 
+                        stock_amount, 
+                        unit, 
+                        storage_location, 
+                        expiry_date, 
+                        notes, 
+                        None  # No image for simplified version
                     )
-                else:
-                    st.warning("⚠️ " + ("Herb name cannot be empty." if lang == "ENG" else "藥材名稱不能為空。"))
-    
+                    
+                    # Reset the form and AI results
+                    st.session_state.selected_storage = None
+                    st.session_state.herb_image = None
+                    st.session_state.herb_ai_result = None
+                    st.session_state.has_confirmed_ai_result = False
+                    st.rerun()
+        
+        # Add a reset button for the form
+        if st.button("🔄 Reset Form", use_container_width=True):
+            st.session_state.selected_storage = None
+            st.session_state.herb_image = None
+            st.session_state.herb_ai_result = None
+            st.session_state.has_confirmed_ai_result = False
+            st.rerun()
+
+
+
     # Search Herbs section
     elif selected_menu == "🔍 Search Herbs" or selected_menu == "🔍 搜索藥材":
         st.subheader("🔍 " + ("Search Herbs" if lang == "ENG" else "搜索藥材"))
@@ -982,18 +1300,3 @@ def show_herb_inventory():
                     
                     # Refresh the page
                     st.rerun()
-
-# Add the new page to main.py
-# In main.py, add:
-# from herb_inventory import show_herb_inventory
-
-# Then add to nav_items
-# "Herb Inventory": {
-#     "ENG": "Herb Inventory",
-#     "中文": "藥材庫存",
-#     "icon": "🧪"
-# }
-
-# And add to main content area
-# elif page == "Herb Inventory":
-#     show_herb_inventory()

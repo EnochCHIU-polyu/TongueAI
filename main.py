@@ -574,4 +574,4 @@ with st.container():
     elif page == "quick_start":
         show_quick_start(client, model_name)
     elif page == "Herb Inventory":
-        show_herb_inventory()
+        show_herb_inventory(client, model_name)
