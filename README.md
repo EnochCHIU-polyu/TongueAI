@@ -11,4 +11,4 @@ It's never too hard—just go for it!
 [GitHub](https://github.com/EnochCHIU-polyu)
 
 ## Streamlit Application
-[Streamlit](https://tongueai.streamlit.app/)
+[Streamlit](https://tcmwithai.streamlit.app/)
